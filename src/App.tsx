@@ -119,6 +119,7 @@ export default function App() {
   const statics = useRef<Record<string, Pt>>({});
   const prevOn = useRef<Set<string>>(new Set());
   const inited = useRef(false);
+  const shape = useRef<Record<string, string>>({}); // forma vigente de cada tarjeta (React no debe borrarla al re-renderizar)
 
   // ---------------- navegación (clic, botones, teclado y desplazamiento vertical sincronizado)
   const go = useCallback((n: number) => {
@@ -215,7 +216,7 @@ export default function App() {
       const dim = explore && sel ? (isRelated(sel, k as ModelId) ? 1 : 0.18) : 1;
       gsap.to(el, {
         x: s.x, y: s.y, opacity: s.o * dim, scale: s.s, width: s.w || undefined, duration: dur, delay: reduced() || first ? 0 : s.d, ease: 'power3.inOut', overwrite: 'auto',
-        onStart: () => { if (k !== 'hero') { el.classList.toggle('compact', s.compact); el.classList.toggle('orb', !!s.orb); } },
+        onStart: () => { if (k !== 'hero') { el.classList.toggle('compact', s.compact); el.classList.toggle('orb', !!s.orb); shape.current[k] = (s.compact ? ' compact' : '') + (s.orb ? ' orb' : ''); } },
       });
       if (k !== 'hero') el.style.pointerEvents = s.o > 0.2 && (beat < 8 || explore) ? 'auto' : 'none';
     }
@@ -542,7 +543,7 @@ export default function App() {
 
         {MODELS.map((mod) => (
           <div key={mod.id} ref={(e) => { cards.current[mod.id] = e; }} data-id={mod.id}
-            className={'abs node d1 on mm-' + mod.id + (explore && sel === mod.id ? ' sel' : '')}
+            className={'abs node d1 on mm-' + mod.id + (explore && sel === mod.id ? ' sel' : '') + (shape.current[mod.id] || '')}
             style={{ ['--c' as string]: mod.color, ['--ink' as string]: mod.ink, opacity: 0, cursor: 'pointer' }}
             onClick={(e) => onCard(e, mod.id)}>
             <div className="wm">{ICONS[mod.id]}</div>
