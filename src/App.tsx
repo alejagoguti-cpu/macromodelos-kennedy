@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Bird, Droplets, Gauge, Leaf, MousePointerClick, 
 import { ACTIVE_BY_BEAT, BOUNDS, COLORS, CYCLE, CYCLE_PROPOSED, GEO, MODEL, MODELS, N, SPINE, STEP_LABELS, type GeoId, type ModelId } from './content';
 import { CONNS, REL_TEXT, type Conn } from './conns';
 import { MapView, type Pad } from './mapview';
+import { Kennedy3D } from './kennedy3d';
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
@@ -47,16 +48,17 @@ function layout(b: number, W: number, H: number, m: boolean): Record<string, St>
   return L;
 }
 
-function camera(b: number, W: number, H: number, m: boolean): { box: [number, number, number, number]; pad: Pad } {
+function camera(b: number, W: number, H: number, m: boolean): { box: [number, number, number, number]; pad: Pad; az: number; el: number } {
   const pad: Pad = m ? { top: H * 0.5, right: 14, bottom: 80, left: 14 } : { top: 80, right: 40, bottom: 90, left: W * 0.4 };
-  if (b === 3) return { box: BOUNDS.humedales, pad };
+  if (b === 2) return { box: BOUNDS.kennedy, pad, az: -0.2, el: 0.9 };
+  if (b === 3) return { box: BOUNDS.humedales, pad, az: 0.18, el: 0.85 };
   if (b === 4 || b === 5) {
     if (b === 5 && !m) pad.right = W * 0.34;
     if (b === 5 && m) pad.top = H * 0.36;
-    return { box: BOUNDS.corabastos, pad };
+    return { box: BOUNDS.corabastos, pad, az: -0.28, el: 0.78 };
   }
   if (b === 8) { pad.left = m ? 14 : W * 0.46; }
-  return { box: BOUNDS.kennedy, pad };
+  return { box: BOUNDS.kennedy, pad, az: b === 7 ? 0.2 : b === 8 ? -0.1 : 0, el: b >= 6 ? 1.0 : 0.95 };
 }
 
 // ------------------------------------------------------------ geometría
@@ -69,6 +71,8 @@ export default function App() {
   const [sel, setSel] = useState<ModelId | null>(null);
   const [size, setSize] = useState({ W: window.innerWidth, H: window.innerHeight });
   const [mapOk, setMapOk] = useState(false);
+  const [view3d, setView3d] = useState(true);
+  const [k3p, setK3p] = useState(0);
   const { W, H } = size;
   const m = W < 760;
 
@@ -79,6 +83,9 @@ export default function App() {
   const cards = useRef<Record<string, HTMLElement | null>>({});
   const lanes = useRef<Record<string, HTMLElement | null>>({});
   const mv = useRef<MapView | null>(null);
+  const k3 = useRef<Kennedy3D | null>(null);
+  const k3El = useRef<HTMLDivElement>(null);
+  const v3 = useRef(true);
   const beatRef = useRef(0);
   const lock = useRef(false);
   const statics = useRef<Record<string, Pt>>({});
@@ -133,8 +140,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!mapOk || !mv.current) return;
+    const k = new Kennedy3D(k3El.current!);
+    k3.current = k;
+    return () => { k.dispose(); k3.current = null; };
+  }, []);
+  useEffect(() => { if (beat >= 1 && k3.current) k3.current.load(setK3p); }, [beat]);
+  useEffect(() => { v3.current = view3d; }, [view3d]);
+  useEffect(() => { if (k3.current) k3.current.active = beat >= 2 && view3d; }, [beat, view3d]);
+  useEffect(() => { k3.current?.resize(); }, [W, H]);
+  useEffect(() => { if (k3.current) k3.current.state(beat, explore ? sel : null); }, [beat, explore, sel]);
+
+  useEffect(() => {
     const c = camera(beat, W, H, m);
+    if (k3.current) k3.current.fit(c.box, c.pad, reduced() ? 0 : beat === beatRef.current ? 1.9 : 0, c.az, c.el);
+    if (!mapOk || !mv.current) return;
     mv.current.fit(c.box, c.pad, reduced() ? 0 : beat === beatRef.current ? 1800 : 0);
     mv.current.map.resize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,9 +165,10 @@ export default function App() {
 
   // el mapa se integra a la composición: aparece al hacer clic en el Hidrocéntrico
   useLayoutEffect(() => {
-    gsap.to(mapEl.current, { opacity: beat >= 2 ? 1 : 0, duration: reduced() ? 0 : 1.4, ease: 'power2.out' });
+    gsap.to(mapEl.current, { opacity: beat >= 2 && !view3d ? 1 : 0, duration: reduced() ? 0 : 1.4, ease: 'power2.out' });
+    gsap.to(k3El.current, { opacity: beat >= 2 && view3d ? 1 : 0, duration: reduced() ? 0 : 1.4, ease: 'power2.out' });
     gsap.to('#wash', { opacity: beat >= 2 && beat <= 7 ? 1 : 0, duration: 1 });
-  }, [beat]);
+  }, [beat, view3d]);
 
   // ---------------- tarjetas
   useLayoutEffect(() => {
@@ -217,6 +237,10 @@ export default function App() {
         return { x: r.right, y: r.top + r.height / 2, dx: 1, dy: 0 };
       }
       if (k === 'g') {
+        if (v3.current) {
+          const q = k3.current?.project(GEO[a as GeoId].ll);
+          return q ? { x: q.x, y: q.y, dx: 0, dy: 0 } : null;
+        }
         const v = mv.current;
         if (!v || !v.map.loaded()) return null;
         const p = v.project(GEO[a as GeoId].ll);
@@ -324,6 +348,7 @@ export default function App() {
       <div ref={spacerRef} style={{ height: N * 100 + 'vh' }} aria-hidden />
       <div id="stage" ref={stageRef} onClick={() => { if (explore) setSel(null); }}>
         <div id="map" ref={mapEl} style={{ opacity: 0 }} />
+        <div id="k3d" ref={k3El} style={{ opacity: 0 }} />
         <div id="wash" style={{ opacity: 0 }} />
 
         {/* campos conceptuales: el Hidrocéntrico queda dentro del Ecocéntrico; Biocéntrico y Límites los atraviesan */}
@@ -427,6 +452,12 @@ export default function App() {
             <div className="logo"><Network /></div>
             <div><h1>Red propia · Kennedy</h1><p>Modelamiento dinámico · macromodelos territoriales</p></div>
           </div>
+          {beat >= 2 && (
+            <button className="btn" onClick={() => setView3d(!view3d)} title="Cambiar entre el Kennedy 3D y el mapa 2D">
+              <Network />{view3d ? 'Mapa 2D' : 'Kennedy 3D'}
+              {view3d && k3p < 1 && <span className="kick" style={{ marginLeft: 4 }}>{Math.round(k3p * 100)}%</span>}
+            </button>
+          )}
           {beat === 8 && (
             <button className={'btn pri' + (explore ? ' act' : '')} onClick={() => { setExplore(!explore); setSel(null); }}>
               <Network />{explore ? 'Salir de explorar' : 'Explorar red'}
