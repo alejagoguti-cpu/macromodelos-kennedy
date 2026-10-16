@@ -187,3 +187,32 @@ button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .flow, .gr, .node.d0::after, #hint, .chain span, .btn.pri { animation: none; }
 }
+
+/* ---------- red propia: nodos circulares y anillos orbitales */
+.node.orb { background: transparent; border: 0; padding: 0; overflow: visible; flex-direction: column; align-items: center; gap: 8px; box-shadow: none; }
+.node.orb::before { display: none; }
+.node.orb:hover { box-shadow: none; }
+.node.orb .wm, .node.orb .dsc, .node.orb .chain, .node.orb .tag, .node.orb .id { display: none; }
+.node.orb .tile { width: 70px; height: 70px; border-radius: 50%; border: 0; background: var(--c); color: var(--ink); box-shadow: 0 0 0 7px color-mix(in srgb, var(--c) 20%, transparent), 0 0 40px -4px var(--c); animation: orbp 3.2s ease-in-out infinite; }
+.node.orb .tile svg { width: 34px; height: 34px; }
+@keyframes orbp { 50% { box-shadow: 0 0 0 13px color-mix(in srgb, var(--c) 8%, transparent), 0 0 56px 0 var(--c); } }
+.node.orb .txt { align-items: center; text-align: center; }
+.lbs { display: none; }
+.node.orb .lb { display: none; }
+.node.orb .lbs { display: block; font: 600 12.5px/1.15 var(--sans); color: #fff; letter-spacing: .2px; text-shadow: 0 0 6px #000, 0 0 14px #000, 0 1px 2px #000; white-space: nowrap; }
+.node.orb .lb-old { color: #fff; font-size: 12.5px; font-weight: 600; letter-spacing: .2px; text-shadow: 0 0 6px #000, 0 0 14px #000, 0 1px 2px #000; }
+.node.orb.sel .tile { box-shadow: 0 0 0 4px #fff, 0 0 56px 2px var(--c); }
+.net { opacity: 0; transition: opacity 1s; pointer-events: none; }
+.net.on { opacity: 1; }
+.nring { fill: none; stroke-width: 1.4; }
+.nring.bio { stroke: #f0f0f0; stroke-opacity: .5; stroke-dasharray: 2 9; stroke-linecap: round; animation: dash 30s linear infinite; }
+.nring.lim { stroke: #b4b4b4; stroke-opacity: .6; stroke-width: 2.2; stroke-dasharray: 14 10; animation: dash 22s linear infinite reverse; }
+.nring.eco { stroke: #ebe5d9; stroke-opacity: .55; stroke-width: 1.6; }
+.nring.tri { stroke: #ebe5d9; stroke-opacity: .16; stroke-dasharray: 3 7; animation: dash 40s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -400; } }
+.nhid { animation: hidp 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes hidp { 50% { transform: scale(1.18); } }
+.neco { animation: ecop 7s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes ecop { 50% { transform: scale(1.025); } }
+.ringlb { font: 500 10px var(--mono); letter-spacing: 1.6px; paint-order: stroke; stroke: #000; stroke-width: 5px; stroke-linejoin: round; }
+.orbdot { filter: drop-shadow(0 0 6px currentColor); }

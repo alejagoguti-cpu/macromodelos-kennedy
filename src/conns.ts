@@ -49,7 +49,7 @@ add({ id: 'c-art', a: 'g:patio', b: 'g:corabastos', color: C.earth, dashed: true
 
 // ---- Circularidad: se conecta al ciclo y el ciclo a Corabastos
 add({ id: 'ci-cora', a: 'x:residuos', b: 'g:corabastos', color: C.orange, min: 5, max: 5, delay: 1.2, models: ['cir'], title: 'Generación de residuos orgánicos en Corabastos (NOD-ECO01)' });
-add({ id: 'ci-net', a: 'c:cir:r', b: 'g:corabastos', color: C.orange, min: 8, max: 8, delay: 0.5, models: ['cir'] });
+add({ id: 'ci-net', a: 'o:cir', b: 'g:corabastos', color: C.orange, min: 8, max: 8, delay: 0.5, models: ['cir'], exp: true });
 
 // ---- Límites ecológicos: tensiones y dependencias del Excel del proyecto
 add({ id: 'l-cali', a: 'c:lim:r', b: 'g:cali', color: C.grey, min: 6, max: 6, delay: 0.4, models: ['lim'] });
@@ -67,17 +67,16 @@ LIMIT_EDGES.forEach((e, i) => {
 add({ id: 'b-tingua', a: 'c:bio:r', b: 'g:tingua', color: C.bio, min: 7, max: 7, delay: 1.3, models: ['bio'] });
 add({ id: 'b-vuelo', a: 'c:bio:r', b: 'g:vuelo', color: C.bio, min: 7, max: 7, delay: 1.5, models: ['bio'] });
 
-// ---- red propia (secuencia 8)
-add({ id: 'n-hid-reg', a: 'c:hid:b', b: 'c:reg:t', color: C.water, arrow: true, min: 8, max: 8, delay: 1.0, models: ['hid', 'reg'] });
-add({ id: 'n-reg-com', a: 'c:reg:b', b: 'c:com:t', color: C.green, arrow: true, min: 8, max: 8, delay: 1.2, models: ['reg', 'com'], label: 'transformación ecológica y económica' });
-add({ id: 'n-com-cir', a: 'c:com:b', b: 'c:cir:t', color: C.earth, arrow: true, min: 8, max: 8, delay: 1.4, models: ['com', 'cir'] });
-add({ id: 'n-lim', a: 'c:lim:t', b: 'f:eco:b', color: C.grey, min: 8, max: 8, delay: 1.6, models: ['lim', 'eco', 'hid', 'reg', 'com', 'cir'], label: 'condiciona' });
-add({ id: 'n-bio', a: 'c:bio:b', b: 'f:eco:t', color: C.bio, min: 8, max: 8, delay: 1.8, models: ['bio', 'eco', 'hid', 'reg', 'com', 'cir', 'lim'], label: 'criterio de evaluación' });
+// ---- red propia (secuencia 8): relaciones entre macromodelos
+add({ id: 'n-eco-hid', a: 'o:eco', b: 'o:hid', color: C.cream, arrow: true, min: 8, max: 8, delay: 0.9, models: ['eco', 'hid'], title: 'El Hidrocéntrico está contenido dentro del enfoque Ecocéntrico' });
+add({ id: 'n-hid-reg', a: 'o:hid', b: 'o:reg', color: C.water, arrow: true, min: 8, max: 8, delay: 1.2, models: ['hid', 'reg'] });
+add({ id: 'n-reg-com', a: 'o:reg', b: 'o:com', color: C.green, arrow: true, min: 8, max: 8, delay: 1.5, models: ['reg', 'com'], label: 'transformación ecológica y económica' });
+add({ id: 'n-com-cir', a: 'o:com', b: 'o:cir', color: C.earth, arrow: true, min: 8, max: 8, delay: 1.8, models: ['com', 'cir'] });
 
 // red propia: las mismas relaciones espaciales; las que unen dos puntos del territorio solo al explorar
 for (const o of CONNS.slice()) {
   if (o.max === 8 || !(o.a.startsWith('g:') || o.b.startsWith('g:')) || o.a.startsWith('x:')) continue;
-  add({ ...o, id: o.id + '-n', min: 8, max: 8, exp: o.a.startsWith('g:') });
+  add({ ...o, id: o.id + '-n', a: o.a.startsWith('c:') ? 'o:' + o.a.split(':')[1] : o.a, min: 8, max: 8, exp: true });
 }
 
 // relaciones narradas por macromodelo (modo explorar)

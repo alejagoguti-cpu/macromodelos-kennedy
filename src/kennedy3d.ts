@@ -40,10 +40,12 @@ export class Kennedy3D {
   running = true;
   walls: THREE.Mesh[] = [];
   active = false;
+  orbit = false;
+  lastDraw = 0;
 
   constructor(private host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    this.renderer.setPixelRatio(1);
     this.renderer.setClearColor(0x000000, 0);
     host.appendChild(this.renderer.domElement);
     this.camera = new THREE.PerspectiveCamera(38, 1, 2, 9000);
@@ -56,7 +58,10 @@ export class Kennedy3D {
     this.buildOverlay();
     const loop = () => {
       if (!this.running) return;
-      if (this.active) {
+      const now = performance.now();
+      // se dibuja cada cuadro mientras la cámara se mueve; en reposo (deriva lenta / órbita) a ~12 cuadros por segundo para no frenar la interfaz
+      if (this.active && (gsap.isTweening(this.cam) || now - this.lastDraw > 80)) {
+        this.lastDraw = now;
         this.update();
         this.renderer.render(this.scene, this.camera);
       }
@@ -86,7 +91,7 @@ export class Kennedy3D {
   private update() {
     const c = this.cam;
     const drift = Math.sin((performance.now() - this.t0) / 9000) * 0.05;
-    const az = c.az + drift;
+    const az = c.az + drift + (this.orbit ? ((performance.now() - this.t0) / 1000) * 0.045 : 0);
     const r = c.dist;
     this.camera.position.set(c.tx + r * Math.sin(az) * Math.cos(c.el), r * Math.sin(c.el), c.tz + r * Math.cos(az) * Math.cos(c.el));
     this.camera.lookAt(c.tx, 0, c.tz);
