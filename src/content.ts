@@ -90,7 +90,6 @@ export const LIMIT_EDGES: { id: string; a: GeoId; b: GeoId }[] = [
   { id: 'EDG-14', a: 'corabastos', b: 'vaca' },
   { id: 'EDG-02', a: 'aero', b: 'techo' },
   { id: 'EDG-56', a: 'aero', b: 'calle13' },
-  { id: 'EDG-01', a: 'aero', b: 'americas' },
   { id: 'EDG-54', a: 'magdalena', b: 'techo' },
   { id: 'EDG-04', a: 'tintal', b: 'burro' },
 ];
@@ -101,6 +100,7 @@ export const BOUNDS = {
   kennedy: [-74.186, 4.606, -74.126, 4.664] as [number, number, number, number],
   humedales: [-74.168, 4.622, -74.136, 4.652] as [number, number, number, number],
   corabastos: [-74.1735, 4.6125, -74.1395, 4.6405] as [number, number, number, number],
+  nucleo: [-74.1745, 4.6175, -74.1285, 4.6595] as [number, number, number, number],
 };
 
 export const CYCLE = [

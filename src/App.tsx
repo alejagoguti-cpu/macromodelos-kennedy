@@ -3,7 +3,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
-import { ArrowLeft, ArrowRight, Bird, Droplets, Gauge, Leaf, MousePointerClick, Network, PackagePlus, Recycle, ShoppingBasket, Sprout, Store, Trash2, Wheat } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bird, Droplets, Gauge, Leaf, MousePointerClick, Network, PackagePlus, Plane, Recycle, Route, ShoppingBasket, Sprout, Store, Trash2, Truck, Users, Waves, Wheat, Zap, Link2, Building2 } from 'lucide-react';
+import type { LngLat } from './content';
 import { ACTIVE_BY_BEAT, BOUNDS, COLORS, CYCLE, CYCLE_PROPOSED, GEO, MODEL, MODELS, N, SPINE, STEP_LABELS, type GeoId, type ModelId } from './content';
 import { CONNS, REL_TEXT, type Conn } from './conns';
 import { MapView, type Pad } from './mapview';
@@ -15,6 +16,11 @@ gsap.ticker.lagSmoothing(0);
 
 const ICONS: Record<ModelId, ReactElement> = {
   eco: <Leaf />, hid: <Droplets />, reg: <Sprout />, com: <Store />, cir: <Recycle />, lim: <Gauge />, bio: <Bird />,
+};
+// cada punto del territorio se marca con un ícono de su sistema (hídrico, movilidad, comercio, fauna...)
+const GEO_ICON: Record<GeoId, ReactElement> = {
+  burro: <Droplets />, vaca: <Droplets />, techo: <Droplets />, hub: <Sprout />, fucha: <Waves />, corabastos: <Store />, patio: <Users />,
+  cali: <Route />, americas: <Route />, calle13: <Truck />, aero: <Plane />, tintal: <Building2 />, tingua: <Bird />, vuelo: <Bird />, magdalena: <Waves />,
 };
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -66,7 +72,7 @@ function layout(b: number, W: number, H: number, m: boolean): Record<string, St>
   return L;
 }
 
-function camera(b: number, W: number, H: number, m: boolean): { box: [number, number, number, number]; pad: Pad; az: number; el: number } {
+function camera(b: number, W: number, H: number, m: boolean): { box: [number, number, number, number]; pad: Pad; az: number; el: number; pts?: LngLat[] } {
   const pad: Pad = m ? { top: H * 0.5, right: 14, bottom: 80, left: 14 } : { top: 80, right: 40, bottom: 90, left: W * 0.4 };
   if (b === 2) return { box: BOUNDS.kennedy, pad, az: -0.2, el: 0.9 };
   if (b === 3) return { box: BOUNDS.humedales, pad, az: 0.18, el: 0.85 };
@@ -75,6 +81,8 @@ function camera(b: number, W: number, H: number, m: boolean): { box: [number, nu
     if (b === 5 && m) pad.top = H * 0.36;
     return { box: BOUNDS.corabastos, pad, az: -0.28, el: 0.78 };
   }
+  if (b === 6) return { box: BOUNDS.nucleo, pad, az: 0.42, el: 0.92, pts: ['corabastos', 'vaca', 'burro', 'cali', 'techo', 'aero', 'calle13', 'tintal', 'magdalena'].map((g) => GEO[g as GeoId].ll) };
+  if (b === 7) return { box: BOUNDS.nucleo, pad, az: 0.3, el: 0.88, pts: ['burro', 'vaca', 'techo', 'tingua', 'vuelo', 'fucha'].map((g) => GEO[g as GeoId].ll) };
   if (b === 8) { pad.left = 0; pad.right = 0; pad.top = m ? H * 0.2 : 70; }
   return { box: BOUNDS.kennedy, pad, az: b === 7 ? 0.2 : b === 8 ? -0.1 : 0, el: b === 8 ? 0.78 : b >= 6 ? 1.0 : 0.95 };
 }
@@ -170,7 +178,7 @@ export default function App() {
 
   useEffect(() => {
     const c = camera(beat, W, H, m);
-    if (k3.current) k3.current.fit(c.box, c.pad, reduced() ? 0 : beat === beatRef.current ? 1.9 : 0, c.az, c.el);
+    if (k3.current) k3.current.fit(c.box, c.pad, reduced() ? 0 : beat === beatRef.current ? 1.9 : 0, c.az, c.el, c.pts);
     if (!mapOk || !mv.current) return;
     mv.current.fit(c.box, c.pad, reduced() ? 0 : beat === beatRef.current ? 1800 : 0);
     mv.current.map.resize();
@@ -304,9 +312,11 @@ export default function App() {
       }
       document.querySelectorAll('.lane.on .chip, #legend, #panel, .herosub').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 4)));
       svg.querySelectorAll('.cyc.on text').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 3)));
-      const place = (px: number, py: number, w: number, h: number, cands: [number, number][], mid: boolean) => {
-        for (const [dx, dy] of cands) {
-          const x = px + dx - (mid ? w / 2 : dx < 0 ? w : 0);
+      svg.querySelectorAll('g.gp.on .gd, g.gl2.on circle').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 3)));
+      const place = (px: number, py: number, w: number, h: number, cands: [number, number, boolean?][], mid: boolean) => {
+        for (const [dx, dy, md] of cands) {
+          const m0 = md ?? mid;
+          const x = px + dx - (m0 ? w / 2 : dx < 0 ? w : 0);
           const bx: Box = { x, y: py + dy - h + 3, w, h };
           if (bx.x < 6 || bx.x + bx.w > Wd - 6 || bx.y < 70 || bx.y + bx.h > Hd - 70) continue;
           if (occ.some((o) => hit(bx, o))) continue;
@@ -322,9 +332,11 @@ export default function App() {
         const px = parseFloat(P[1]), py = parseFloat(P[2]);
         if (!t.dataset.w) t.dataset.w = String(t.getComputedTextLength() + 8);
         const w = parseFloat(t.dataset.w);
-        const pos = place(px, py, w, 13, [[10, -6], [10, 16], [-10, -6], [-10, 16], [0, -18], [0, 28], [26, -22], [-26, 32]], false);
+        const pos = place(px, py, w, 13, [[0, 32, true], [0, -22, true], [20, 4], [20, 22], [-20, 4], [-20, 22], [0, 48, true], [0, -38, true]], false);
         if (pos) {
-          t.setAttribute('text-anchor', pos.x < px - 1 ? 'end' : 'start');
+          const dxp = pos.x - px;
+          const md = Math.abs(dxp) < 1;
+          t.setAttribute('text-anchor', md ? 'middle' : dxp < 0 ? 'end' : 'start');
           t.setAttribute('x', String(pos.x - px));
           t.setAttribute('y', String(pos.y - py));
           t.style.opacity = '1';
@@ -369,8 +381,7 @@ export default function App() {
           const ang = Math.atan2(ey || (B.y - A.y), ex || (B.x - A.x)) * (180 / Math.PI);
           ar.setAttribute('transform', 'translate(' + B.x + ' ' + B.y + ') rotate(' + ang + ')');
         }
-        const lb = svg.querySelector<SVGTextElement>('text[data-el="' + g.dataset.cn + '"]');
-        if (lb) {
+        {
           const t = 0.5, u = 1 - t;
           const mx = u * u * u * A.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * B.x;
           const my = u * u * u * A.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * B.y;
@@ -381,6 +392,25 @@ export default function App() {
         const P = anchor('g:' + g.dataset.g, null);
         if (P) g.setAttribute('transform', 'translate(' + P.x + ' ' + P.y + ')');
       });
+      svg.querySelectorAll<SVGGElement>('g[data-gl]').forEach((g) => {
+        const m = mids[g.dataset.gl!];
+        if (m) g.setAttribute('transform', 'translate(' + m.x + ' ' + m.y + ')');
+      });
+      // Biocéntrico: corchete lateral que recorre las tarjetas anteriores (criterio transversal de evaluación)
+      const bp = svg.querySelectorAll<SVGPathElement>('path[data-brk]');
+      if (b === 7) {
+        const rb = rect(cards.current.bio);
+        const items = SPINE.filter((id) => id !== 'bio').map((id) => ({ id, r: cards.current[id] ? rect(cards.current[id]) : null, o: parseFloat(cards.current[id]?.style.opacity || '0') })).filter((x) => x.r && x.o > 0.2);
+        if (rb && items.length) {
+          const x = Math.min(rb.left, ...items.map((i) => i.r!.left)) - 22;
+          const yb = rb.top + rb.height / 2;
+          const ys = items.map((i) => i.r!.top + i.r!.height / 2);
+          const yMin = Math.min(...ys);
+          let d = 'M' + rb.left + ' ' + yb + 'H' + x + 'V' + yMin;
+          items.forEach((i, k) => { d += 'M' + x + ' ' + ys[k] + 'H' + (i.r!.left - 3); });
+          bp.forEach((p) => p.setAttribute('d', d));
+        }
+      } else bp.forEach((p) => p.setAttribute('d', ''));
       declutter(svg, mids);
     };
     gsap.ticker.add(tick);
@@ -467,11 +497,23 @@ export default function App() {
           {CONNS.filter((c) => c.label).map((c) => (
             <text key={'t' + c.id} data-el={c.id} className={'el' + (conns.includes(c) && related(c) ? ' on' : '')} textAnchor="middle" style={{ ['--c' as string]: c.color, ['--dl' as string]: (c.delay || 0) + 0.4 + 's' }}>{c.label}</text>
           ))}
+          {CONNS.filter((c) => c.kind).map((c) => (
+            <g key={'gl' + c.id} data-gl={c.id} className={'gl2' + (conns.includes(c) && related(c) ? ' on' : '') + (c.kind === 'tension' ? ' ten' : ' dep')} style={{ ['--dl' as string]: (c.delay || 0) + 0.5 + 's' }}>
+              <title>{c.title}</title>
+              <circle r="12" />
+              {cloneElement(c.kind === 'tension' ? <Zap /> : <Link2 />, { x: -7, y: -7, size: 14, strokeWidth: 2.2 } as object)}
+            </g>
+          ))}
+          <g className={'brk' + (beat === 7 ? ' on' : '')}>
+            <path data-brk className="base" pathLength={1} />
+            <path data-brk className="flow" pathLength={1} />
+          </g>
           {(Object.keys(GEO) as GeoId[]).map((g) => (
             <g key={g} data-g={g} className={'gp' + (geoColor[g] ? ' on' : '')} style={{ ['--c' as string]: geoColor[g] || '#fff' }}>
-              <circle className="gr" r="5" />
-              <circle className="gd" r="3.4" />
-              <text x="9" y="-7" className="gl">{GEO[g].label}</text>
+              <circle className="gr" r="14" />
+              <circle className="gd" r="14" />
+              <g style={{ color: 'var(--c)' }}>{cloneElement(GEO_ICON[g], { x: -8, y: -8, size: 16, strokeWidth: 2 } as object)}</g>
+              <text x="0" y="30" className="gl">{GEO[g].label}</text>
             </g>
           ))}
         </svg>

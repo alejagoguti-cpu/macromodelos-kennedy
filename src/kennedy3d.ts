@@ -110,12 +110,19 @@ export class Kennedy3D {
   }
 
   // ---------------- cámara: encuadre por cuadro geográfico
-  fit(box: Box, pad: Pad, duration = 1.8, az = -0.18, el = 0.92) {
+  fit(box: Box, pad: Pad, duration = 1.8, az = -0.18, el = 0.92, pts?: LngLat[]) {
     this.pad = pad;
     this.applyView();
     const a = llToScene(box[0], box[1]), b = llToScene(box[2], box[3]);
-    const cx = (a.x + b.x) / 2, cz = (a.z + b.z) / 2;
-    const hx = Math.abs(b.x - a.x) / 2, hz = Math.abs(b.z - a.z) / 2;
+    const P = pts ? pts.map((p) => llToScene(p[0], p[1])) : [a, b, { x: a.x, z: b.z }, { x: b.x, z: a.z }];
+    // se encuadra en el sistema de la cámara (derecha / profundidad), no en el norte: así el cuadro sigue al ángulo de vista
+    const rx = Math.cos(az), rz = -Math.sin(az), fx = -Math.sin(az), fz = -Math.cos(az);
+    let r0 = 1e9, r1 = -1e9, f0 = 1e9, f1 = -1e9;
+    P.forEach((p) => { const r = p.x * rx + p.z * rz, f = p.x * fx + p.z * fz; r0 = Math.min(r0, r); r1 = Math.max(r1, r); f0 = Math.min(f0, f); f1 = Math.max(f1, f); });
+    const mg = pts ? 26 : 0;
+    const rc = (r0 + r1) / 2, fc = (f0 + f1) / 2;
+    const cx = rc * rx + fc * fx, cz = rc * rz + fc * fz;
+    const hx = (r1 - r0) / 2 + mg, hz = (f1 - f0) / 2 + mg;
     const fw = Math.max(0.25, (this.W - pad.left - pad.right) / this.W);
     const fh = Math.max(0.25, (this.H - pad.top - pad.bottom) / this.H);
     const t = Math.tan((this.camera.fov * Math.PI) / 360);
@@ -296,7 +303,7 @@ export class Kennedy3D {
     });
     if (this.lines.rio) this.fade(this.lines.rio.m, hk ? 0.7 : 0, hk ? 2.2 : 0, 1.2);
     if (this.lines.canal) this.fade(this.lines.canal.m, hk ? 0.28 : 0, hk ? 2.6 : 0, 1.2);
-    const reg = (beat === 3 || beat === 4) || (beat === 8 && (all || sel === 'reg' || sel === 'eco')) ? 0.4 : 0;
+    const reg = (beat === 7 ? 0.3 : 0) || (beat === 3 || beat === 4) || (beat === 8 && (all || sel === 'reg' || sel === 'eco')) ? 0.4 : 0;
     if (this.lines.rondas) this.fade(this.lines.rondas.m, reg, reg ? 0.9 : 0);
     const vias = beat === 6 || beat === 7 || (beat === 8 && (all || sel === 'lim' || sel === 'com')) ? 1 : 0;
     if (this.lines.vias) this.fade(this.lines.vias.m, vias ? 0.95 : 0, 0.3);

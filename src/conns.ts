@@ -53,17 +53,15 @@ add({ id: 'ci-net', a: 'o:cir', b: 'g:corabastos', color: C.orange, min: 8, max:
 
 // ---- Límites ecológicos: tensiones y dependencias del Excel del proyecto
 add({ id: 'l-cali', a: 'c:lim:r', b: 'g:cali', color: C.grey, min: 6, max: 6, delay: 0.4, models: ['lim'] });
-add({ id: 'l-13', a: 'c:lim:r', b: 'g:calle13', color: C.grey, min: 6, max: 6, delay: 0.6, models: ['lim'] });
 LIMIT_EDGES.forEach((e, i) => {
   const dep = isDependency(e.id);
   add({
     id: 'e-' + e.id, a: 'g:' + e.a, b: 'g:' + e.b, color: dep ? C.grey : '#ffffff', dashed: dep, min: 6, max: 6, delay: 0.9 + i * 0.28, models: ['lim'],
-    kind: dep ? 'dep' : 'tension', label: e.id, title: arista(e.id).tipo + ' (' + arista(e.id).tension + '): ' + arista(e.id).razon,
+    kind: dep ? 'dep' : 'tension', title: e.id + ' · ' + arista(e.id).tipo + ' (' + arista(e.id).tension + '): ' + arista(e.id).razon,
   });
 });
 
-// ---- Biocéntrico: criterio transversal sobre todo lo anterior
-(['eco', 'hid', 'reg', 'com', 'cir', 'lim'] as ModelId[]).forEach((m, i) => add({ id: 'b-' + m, a: 'c:bio:l', b: 'c:' + m + ':l', color: C.bio, bulge: true, min: 7, max: 7, delay: 0.5 + i * 0.18, models: ['bio', m] }));
+// ---- Biocéntrico: criterio transversal sobre todo lo anterior (el corchete lateral se dibuja aparte)
 add({ id: 'b-tingua', a: 'c:bio:r', b: 'g:tingua', color: C.bio, min: 7, max: 7, delay: 1.3, models: ['bio'] });
 add({ id: 'b-vuelo', a: 'c:bio:r', b: 'g:vuelo', color: C.bio, min: 7, max: 7, delay: 1.5, models: ['bio'] });
 
