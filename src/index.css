@@ -232,3 +232,35 @@ button { font-family: inherit; }
 .brk.on .base { opacity: .8; stroke-dashoffset: 0; }
 .brk .flow { stroke: #fff; opacity: 0; transition: opacity .4s 1.2s; }
 .brk.on .flow { opacity: .9; }
+
+/* ---------- celular: diseño propio, ningún control tapa la red ni el ciclo */
+@media (max-width: 759px) {
+  #bar { padding: 12px 14px; gap: 8px; }
+  #brand { gap: 10px; }
+  #brand > div { min-width: 0; }
+  #brand h1 { overflow: hidden; text-overflow: ellipsis; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; }
+  .logo svg { width: 20px; height: 20px; }
+  #bar .btn { height: 36px; padding: 0 11px; }
+  #bar .btn .bt { display: none; }
+  #nav { padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px)); }
+  #nav .btn { height: 40px; }
+  .ticks span { padding: 0 4px; }
+  #legend { right: 10px; bottom: calc(68px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: auto auto; column-gap: 12px; row-gap: 4px; padding: 7px 10px; font-size: 8.5px; letter-spacing: .8px; border-radius: 10px; }
+  #legend svg { width: 18px; }
+  #legend span { gap: 6px; }
+  #hint { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); font-size: 10.5px; letter-spacing: 1.2px; }
+  .node.orb .tile { width: 50px; height: 50px; box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 20%, transparent), 0 0 28px -4px var(--c); }
+  .node.orb .tile svg { width: 25px; height: 25px; }
+  .node.orb { gap: 6px; }
+  .node.orb .lbs { font-size: 11px; white-space: normal; max-width: 92px; line-height: 1.15; }
+  .ringlb { font-size: 8.5px; letter-spacing: 1.2px; }
+  .cyclb { font-size: 9.5px; letter-spacing: .6px; }
+  .cyctitle { font-size: 10px; letter-spacing: .18em; }
+  .cycsub { font-size: 8px; letter-spacing: .6px; }
+  .cycnum { font-size: 8px; }
+  #panel { overflow: auto; padding: 13px 15px; }
+  #panel h3 { font-size: 16px; }
+  #panel p { font-size: 12.5px; }
+  .el, .gl { font-size: 8.5px; }
+}

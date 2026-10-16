@@ -30,10 +30,11 @@ const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matc
 function orbit(W: number, H: number, m: boolean, shift = false) {
   // al explorar, la red se desplaza a la izquierda y el territorio queda libre a la derecha
   const sh = shift && !m;
-  const u = m ? Math.min(W * 0.47, (H - 250) / 2) : sh ? Math.min(W * 0.255, (H - 170) / 2) : Math.min(W * 0.46, (H - 150) / 2);
-  const cx = sh ? W * 0.27 : W / 2, cy = m ? H * 0.5 : H / 2 + 6;
+  const mx = shift && m;
+  const u = mx ? Math.min(W * 0.45, (H * 0.56 - 96) / 2) : m ? Math.min(W * 0.45, (H - 250) / 2) : sh ? Math.min(W * 0.255, (H - 170) / 2) : Math.min(W * 0.46, (H - 150) / 2);
+  const cx = sh ? W * 0.27 : W / 2, cy = mx ? 86 + u : m ? H * 0.5 : H / 2 + 6;
   const at = (R: number, deg: number) => ({ x: cx + R * Math.cos((deg * Math.PI) / 180), y: cy + R * Math.sin((deg * Math.PI) / 180) });
-  const Rb = u * 0.98, Rl = u * 0.82, Re = u * 0.64, Rt = u * 0.4;
+  const Rb = u * 0.98, Rl = u * 0.82, Re = u * 0.64, Rt = u * (m ? 0.46 : 0.4);
   const pos: Record<ModelId, { x: number; y: number }> = {
     hid: { x: cx, y: cy }, eco: at(Re, -90), reg: at(Rt, -150), com: at(Rt, -30), cir: at(Rt, 90), lim: at(Rl, 42), bio: at(Rb, -138),
   };
@@ -50,7 +51,7 @@ function layout(b: number, W: number, H: number, m: boolean, shift = false): Rec
   const gap = m ? 150 : 150;
   const y0 = m ? 104 : 132;
   const act = ACTIVE_BY_BEAT[b];
-  const target = H * (m ? 0.3 : 0.44);
+  const target = H * (m ? (H < 720 ? 0.32 : 0.36) : 0.44);
   const cam = b >= 8 ? 0 : Math.min(0, target - (y0 + Math.max(act, 0) * gap));
   const netY: Record<ModelId, number> = { bio: 0.165, eco: 0.335, hid: 0.455, reg: 0.565, com: 0.655, cir: 0.745, lim: 0.85 };
   const netX = m ? W * 0.3 : W * 0.17;
@@ -59,13 +60,13 @@ function layout(b: number, W: number, H: number, m: boolean, shift = false): Rec
     const vis = b >= mod.appear && !(b === 0);
     if (b >= 8) {
       const p = orbit(W, H, m, shift).pos[id];
-      L[id] = { x: p.x, y: p.y + (m ? 18 : 22), o: 1, s: 1, w: m ? 104 : 140, compact: true, orb: true, d: 0.15 + i * 0.1 };
+      L[id] = { x: p.x, y: p.y + (m ? 14 : 22), o: 1, s: 1, w: m ? 96 : 140, compact: true, orb: true, d: 0.15 + i * 0.1 };
     } else {
       // la tarjeta activa va completa; las anteriores quedan como fichas compactas que suben
       const ya = Math.max(y0 + 60, target);
       const y = i === act ? ya : i < act ? ya - 132 - (act - i - 1) * 102 : ya + 140;
       const o = !vis ? 0 : i === act ? 1 : Math.max(0.28, 0.7 - (act - i) * 0.14);
-      const fade = y < 128 ? 0 : o;
+      const fade = y < (m ? 96 : 128) ? 0 : o;
       L[id] = { x: sx, y: vis ? y : y + 24, o: id === 'eco' && b === 0 ? 0 : fade, s: vis ? 1 : 0.94, w: i === act ? cw : cw * 0.82, compact: i !== act, d: i === act ? 0.45 : 0 };
     }
   });
@@ -237,14 +238,16 @@ export default function App() {
 
   // ciclo de circularidad (centro y radio)
   const cyc = useMemo(() => {
+    // en celular el ciclo ocupa la franja libre entre la tarjeta y la barra inferior
+    const top = H * (H < 720 ? 0.32 : 0.36) + 76, avail = H - 84 - top;
     const cx = m ? W * 0.5 : Math.min(W * 0.74, W - 250 - Math.min(W * 0.115, H * 0.25));
-    const cy = m ? H * 0.7 : H * 0.5;
-    const R = m ? Math.min(W * 0.22, 120) : Math.min(W * 0.115, H * 0.25);
+    const cy = m ? top + avail / 2 : H * 0.5;
+    const R = m ? Math.max(62, Math.min(W * 0.27, avail / 2 - 58)) : Math.min(W * 0.115, H * 0.25);
     const pts = CYCLE.map((c, i) => {
       const a = (-90 + i * 72) * (Math.PI / 180);
       return { ...c, a, x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) };
     });
-    return { cx, cy, R, pts };
+    return { cx, cy, R, pts, m };
   }, [W, H, m]);
   useEffect(() => {
     const p = cyc.pts[1];
@@ -373,7 +376,10 @@ export default function App() {
       svg.querySelectorAll<SVGGElement>('g[data-cn]').forEach((g) => {
         const A = anchor(g.dataset.a!, null);
         const B = anchor(g.dataset.b!, null);
-        if (!A || !B) return;
+        const gone = (s: string) => { const [k, a] = s.split(':'); return (k === 'c' || k === 'o') && parseFloat(cards.current[a]?.style.opacity || '0') < 0.15; };
+        const hide = gone(g.dataset.a!) || gone(g.dataset.b!);
+        g.style.visibility = hide ? 'hidden' : '';
+        if (!A || !B || hide) return;
         if (A.r || B.r) {
           const L0 = Math.hypot(B.x - A.x, B.y - A.y) || 1, ux = (B.x - A.x) / L0, uy = (B.y - A.y) / L0;
           if (A.r) { A.x += ux * A.r; A.y += uy * A.r; }
@@ -409,7 +415,7 @@ export default function App() {
       });
       // Biocéntrico: corchete lateral que recorre las tarjetas anteriores (criterio transversal de evaluación)
       const bp = svg.querySelectorAll<SVGPathElement>('path[data-brk]');
-      if (b === 7) {
+      if (b === 7 && window.innerWidth >= 760) {
         const rb = rect(cards.current.bio);
         const items = SPINE.filter((id) => id !== 'bio').map((id) => ({ id, r: cards.current[id] ? rect(cards.current[id]) : null, o: parseFloat(cards.current[id]?.style.opacity || '0') })).filter((x) => x.r && x.o > 0.2);
         if (rb && items.length) {
@@ -486,7 +492,7 @@ export default function App() {
 
         {/* conexiones y puntos del territorio */}
         <svg id="links" ref={svgRef} width={W} height={H}>
-          <NetRings o={orb} on={beat === 8} />
+          <NetRings o={orb} on={beat === 8} m={m} />
           <g className={'cyc' + (beat === 5 || (beat === 8 && explore && sel === 'cir') ? ' on' : '')}>
             <CycleSvg cyc={cyc} />
           </g>
@@ -539,7 +545,7 @@ export default function App() {
         <p ref={(e) => { cards.current.heroSub = e; }} className="herosub" style={{ top: H * 0.46 + (m ? 112 : 128) }}>
           El territorio entendido como un sistema de interdependencias entre todas las formas de vida.
         </p>
-        <div id="hint" className={beat === 0 ? '' : 'hide'}><MousePointerClick />Haz clic en Ecocéntrico para comenzar</div>
+        <div id="hint" className={beat === 0 ? '' : 'hide'}><MousePointerClick />{m ? 'Toca Ecocéntrico para comenzar' : 'Haz clic en Ecocéntrico para comenzar'}</div>
 
         {MODELS.map((mod) => (
           <div key={mod.id} ref={(e) => { cards.current[mod.id] = e; }} data-id={mod.id}
@@ -566,7 +572,7 @@ export default function App() {
 
         {/* modo explorar */}
         {beat === 8 && explore && (
-          <div id="panel" className={sel ? 'on' : ''} style={{ ['--c' as string]: selModel?.color || '#fff' }}>
+          <div id="panel" className={sel ? 'on' : ''} style={{ ['--c' as string]: selModel?.color || '#fff', ...(m ? { top: Math.round(orb.cy + orb.Rl + 36), bottom: 'auto', maxHeight: Math.round(H - (orb.cy + orb.Rl + 36) - 74) } : {}) }}>
             {selModel ? (
               <>
                 <div className="kick">{selModel.role}</div>
@@ -590,18 +596,18 @@ export default function App() {
           </div>
           {beat >= 2 && (
             <button className="btn" onClick={() => setView3d(!view3d)} title="Cambiar entre el Kennedy 3D y el mapa 2D">
-              <Network />{view3d ? 'Mapa 2D' : 'Kennedy 3D'}
+              <Network /><span className="bt">{view3d ? 'Mapa 2D' : 'Kennedy 3D'}</span>
               {view3d && k3p < 1 && <span className="kick" style={{ marginLeft: 4 }}>{Math.round(k3p * 100)}%</span>}
             </button>
           )}
           {beat === 8 && (
             <button className={'btn pri' + (explore ? ' act' : '')} onClick={() => { setExplore(!explore); setSel(null); }}>
-              <Network />{explore ? 'Salir de explorar' : 'Explorar red'}
+              <Network />{explore ? (m ? 'Salir' : 'Salir de explorar') : (m ? 'Explorar' : 'Explorar red')}
             </button>
           )}
         </div>
 
-        {dashedLegend && (
+        {dashedLegend && !(m && explore) && (
           <div id="legend">
             <span><svg width="26" height="8"><path d="M1 4H25" stroke="#bbb" strokeWidth="2" strokeLinecap="round" /></svg>existente</span>
             <span><svg width="26" height="8"><path d="M1 4H25" stroke="#bbb" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 5" /></svg>propuesto</span>
@@ -637,9 +643,9 @@ const CYC_ICON: Record<string, ReactElement> = {
 const CYC_LINES: Record<string, string[]> = {
   consumo: ['Consumo'], residuos: ['Residuos', 'orgánicos'], aprov: ['Aprovechamiento'], insumos: ['Nuevos', 'insumos'], prod: ['Producción'],
 };
-function CycleSvg({ cyc }: { cyc: { cx: number; cy: number; R: number; pts: { id: string; label: string; a: number; x: number; y: number }[] } }) {
-  const { cx, cy, R, pts } = cyc;
-  const T = 30; // mitad de la ficha
+function CycleSvg({ cyc }: { cyc: { cx: number; cy: number; R: number; m: boolean; pts: { id: string; label: string; a: number; x: number; y: number }[] } }) {
+  const { cx, cy, R, pts, m } = cyc;
+  const T = m ? 22 : 30; // mitad de la ficha
   const gapA = (T + 12) / R;
   const arcs = pts.map((p, i) => {
     const q = pts[(i + 1) % pts.length];
@@ -664,18 +670,18 @@ function CycleSvg({ cyc }: { cyc: { cx: number; cy: number; R: number; pts: { id
       {pts.map((p, i) => {
         const prop = CYCLE_PROPOSED[i === 0 ? 4 : i - 1];
         const cos = Math.cos(p.a), sin = Math.sin(p.a);
-        const right = cos > 0.25, left = cos < -0.25;
+        const right = !m && cos > 0.25, left = !m && cos < -0.25;
         const lines = CYC_LINES[p.id];
         const lx = p.x + (right ? T + 12 : left ? -T - 12 : 0);
-        const ly = right || left ? p.y - (lines.length - 1) * 7 : sin < 0 ? p.y - T - 12 - (lines.length - 1) * 14 : p.y + T + 20;
+        const ly = right || left ? p.y - (lines.length - 1) * 7 : (m ? sin < -0.9 : sin < 0) ? p.y - T - 12 - (lines.length - 1) * 14 : p.y + T + (m ? 15 : 20);
         return (
           <g key={p.id} className="cycnode" style={{ ['--dl' as string]: 0.3 + i * 0.45 + 's', ['--i' as string]: i }}>
             <title>{prop ? 'Flujo propuesto' : 'Flujo existente'}: {p.label}</title>
-            <rect x={p.x - T} y={p.y - T} width={T * 2} height={T * 2} rx="16" className={'cyctile' + (prop ? ' prop' : '')} />
+            <rect x={p.x - T} y={p.y - T} width={T * 2} height={T * 2} rx={m ? 12 : 16} className={'cyctile' + (prop ? ' prop' : '')} />
             <g style={{ color: COLORS.orange }}>
-              {cloneElement(CYC_ICON[p.id], { x: p.x - 15, y: p.y - 15, size: 30, strokeWidth: 1.8 } as object)}
+              {cloneElement(CYC_ICON[p.id], { x: p.x - (m ? 11 : 15), y: p.y - (m ? 11 : 15), size: m ? 22 : 30, strokeWidth: 1.8 } as object)}
             </g>
-            <text x={p.x - T + 6} y={p.y - T + 14} className="cycnum">{String(i + 1).padStart(2, '0')}</text>
+            <text x={p.x - T + (m ? 4 : 6)} y={p.y - T + (m ? 11 : 14)} className="cycnum">{String(i + 1).padStart(2, '0')}</text>
             <text x={lx} y={ly} textAnchor={right ? 'start' : left ? 'end' : 'middle'} className="cyclb">
               {lines.map((l, k) => (<tspan key={k} x={lx} dy={k === 0 ? 0 : 14}>{l}</tspan>))}
             </text>
@@ -683,14 +689,19 @@ function CycleSvg({ cyc }: { cyc: { cx: number; cy: number; R: number; pts: { id
         );
       })}
       <text x={cx} y={cy - 8} textAnchor="middle" className="cyctitle">CIRCULARIDAD</text>
-      <text x={cx} y={cy + 10} textAnchor="middle" className="cycsub">ciclo de residuos orgánicos</text>
-      <text x={cx} y={cy + 26} textAnchor="middle" className="cycsub">sin cantidades estimadas</text>
+      {m ? (R >= 92 &&
+        <><text x={cx} y={cy + 9} textAnchor="middle" className="cycsub">residuos orgánicos</text>
+        <text x={cx} y={cy + 22} textAnchor="middle" className="cycsub">sin cantidades</text></>
+      ) : (
+        <><text x={cx} y={cy + 10} textAnchor="middle" className="cycsub">ciclo de residuos orgánicos</text>
+        <text x={cx} y={cy + 26} textAnchor="middle" className="cycsub">sin cantidades estimadas</text></>
+      )}
     </>
   );
 }
 
 // ------------------------------------------------------------ anillos de la red propia
-function NetRings({ o, on }: { o: ReturnType<typeof orbit>; on: boolean }) {
+function NetRings({ o, on, m }: { o: ReturnType<typeof orbit>; on: boolean; m: boolean }) {
   const ring = (R: number) => 'M' + (o.cx - R) + ' ' + o.cy + 'a' + R + ' ' + R + ' 0 1 0 ' + 2 * R + ' 0a' + R + ' ' + R + ' 0 1 0 ' + -2 * R + ' 0';
   return (
     <g className={'net' + (on ? ' on' : '')}>
@@ -701,13 +712,13 @@ function NetRings({ o, on }: { o: ReturnType<typeof orbit>; on: boolean }) {
       {/* Biocéntrico: criterio transversal, el anillo más amplio */}
       <circle cx={o.cx} cy={o.cy} r={o.Rb} className="nring bio" />
       <path d={ring(o.Rb)} id="rbio" fill="none" />
-      <text x={o.cx} y={o.cy - o.Rb - 9} textAnchor="middle" className="ringlb" style={{ fill: COLORS.bio }}>BIOCÉNTRICO · CRITERIO TRANSVERSAL DE EVALUACIÓN</text>
+      <text x={o.cx} y={o.cy - o.Rb - 9} textAnchor="middle" className="ringlb" style={{ fill: COLORS.bio }}>{m ? 'BIOCÉNTRICO · CRITERIO TRANSVERSAL' : 'BIOCÉNTRICO · CRITERIO TRANSVERSAL DE EVALUACIÓN'}</text>
       <circle r="4.5" fill={COLORS.bio} className="orbdot"><animateMotion dur="38s" repeatCount="indefinite"><mpath href="#rbio" /></animateMotion></circle>
       <circle r="3" fill={COLORS.bio} className="orbdot"><animateMotion dur="38s" begin="-19s" repeatCount="indefinite"><mpath href="#rbio" /></animateMotion></circle>
       {/* Límites ecológicos: condicionan al sistema completo */}
       <circle cx={o.cx} cy={o.cy} r={o.Rl} className="nring lim" />
       <path d={ring(o.Rl)} id="rlim" fill="none" />
-      <text x={o.cx} y={o.cy + o.Rl + 20} textAnchor="middle" className="ringlb" style={{ fill: COLORS.grey }}>LÍMITES ECOLÓGICOS · CONDICIONAN AL SISTEMA COMPLETO</text>
+      <text x={o.cx} y={o.cy + o.Rl + 20} textAnchor="middle" className="ringlb" style={{ fill: COLORS.grey }}>{m ? 'LÍMITES ECOLÓGICOS' : 'LÍMITES ECOLÓGICOS · CONDICIONAN AL SISTEMA COMPLETO'}</text>
       <circle r="4" fill={COLORS.grey} className="orbdot"><animateMotion dur="26s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#rlim" /></animateMotion></circle>
       <circle r="3" fill={COLORS.grey} className="orbdot"><animateMotion dur="26s" begin="-13s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#rlim" /></animateMotion></circle>
       {/* Ecocéntrico: marco general; Hidrocéntrico queda contenido en su centro */}
