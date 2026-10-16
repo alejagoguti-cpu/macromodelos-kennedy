@@ -27,9 +27,11 @@ const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matc
 // ------------------------------------------------------------ disposición de las tarjetas por secuencia
 // red final: Hidrocéntrico al centro, el campo Ecocéntrico alrededor, la cadena de transformación en triángulo
 // y los criterios transversales (Límites, Biocéntrico) como anillos que envuelven todo
-function orbit(W: number, H: number, m: boolean) {
-  const u = m ? Math.min(W * 0.47, (H - 250) / 2) : Math.min(W * 0.46, (H - 150) / 2);
-  const cx = W / 2, cy = m ? H * 0.5 : H / 2 + 6;
+function orbit(W: number, H: number, m: boolean, shift = false) {
+  // al explorar, la red se desplaza a la izquierda y el territorio queda libre a la derecha
+  const sh = shift && !m;
+  const u = m ? Math.min(W * 0.47, (H - 250) / 2) : sh ? Math.min(W * 0.255, (H - 170) / 2) : Math.min(W * 0.46, (H - 150) / 2);
+  const cx = sh ? W * 0.27 : W / 2, cy = m ? H * 0.5 : H / 2 + 6;
   const at = (R: number, deg: number) => ({ x: cx + R * Math.cos((deg * Math.PI) / 180), y: cy + R * Math.sin((deg * Math.PI) / 180) });
   const Rb = u * 0.98, Rl = u * 0.82, Re = u * 0.64, Rt = u * 0.4;
   const pos: Record<ModelId, { x: number; y: number }> = {
@@ -40,7 +42,7 @@ function orbit(W: number, H: number, m: boolean) {
 
 interface St { x: number; y: number; o: number; s: number; w: number; compact: boolean; d: number; orb?: boolean }
 
-function layout(b: number, W: number, H: number, m: boolean): Record<string, St> {
+function layout(b: number, W: number, H: number, m: boolean, shift = false): Record<string, St> {
   const L: Record<string, St> = {};
   const cw = m ? Math.min(W * 0.9, 380) : 340;
   const nw = m ? W * 0.58 : 232;
@@ -56,7 +58,7 @@ function layout(b: number, W: number, H: number, m: boolean): Record<string, St>
     const mod = MODEL[id];
     const vis = b >= mod.appear && !(b === 0);
     if (b >= 8) {
-      const p = orbit(W, H, m).pos[id];
+      const p = orbit(W, H, m, shift).pos[id];
       L[id] = { x: p.x, y: p.y + (m ? 18 : 22), o: 1, s: 1, w: m ? 104 : 140, compact: true, orb: true, d: 0.15 + i * 0.1 };
     } else {
       // la tarjeta activa va completa; las anteriores quedan como fichas compactas que suben
@@ -72,7 +74,7 @@ function layout(b: number, W: number, H: number, m: boolean): Record<string, St>
   return L;
 }
 
-function camera(b: number, W: number, H: number, m: boolean): { box: [number, number, number, number]; pad: Pad; az: number; el: number; pts?: LngLat[] } {
+function camera(b: number, W: number, H: number, m: boolean, shift = false): { box: [number, number, number, number]; pad: Pad; az: number; el: number; pts?: LngLat[] } {
   const pad: Pad = m ? { top: H * 0.5, right: 14, bottom: 80, left: 14 } : { top: 80, right: 40, bottom: 90, left: W * 0.4 };
   if (b === 2) return { box: BOUNDS.kennedy, pad, az: -0.2, el: 0.9 };
   if (b === 3) return { box: BOUNDS.humedales, pad, az: 0.18, el: 0.85 };
@@ -83,7 +85,7 @@ function camera(b: number, W: number, H: number, m: boolean): { box: [number, nu
   }
   if (b === 6) return { box: BOUNDS.nucleo, pad, az: 0.42, el: 0.92, pts: ['corabastos', 'vaca', 'burro', 'cali', 'techo', 'aero', 'calle13', 'tintal', 'magdalena'].map((g) => GEO[g as GeoId].ll) };
   if (b === 7) return { box: BOUNDS.nucleo, pad, az: 0.3, el: 0.88, pts: ['burro', 'vaca', 'techo', 'tingua', 'vuelo', 'fucha'].map((g) => GEO[g as GeoId].ll) };
-  if (b === 8) { pad.left = 0; pad.right = 0; pad.top = m ? H * 0.2 : 70; }
+  if (b === 8) { pad.left = shift && !m ? W * 0.5 : 0; pad.right = 0; pad.top = m ? H * 0.2 : shift ? 300 : 70; }
   return { box: BOUNDS.kennedy, pad, az: b === 7 ? 0.2 : b === 8 ? -0.1 : 0, el: b === 8 ? 0.78 : b >= 6 ? 1.0 : 0.95 };
 }
 
@@ -177,13 +179,13 @@ export default function App() {
   useEffect(() => { if (k3.current) k3.current.state(beat, explore ? sel : null); }, [beat, explore, sel]);
 
   useEffect(() => {
-    const c = camera(beat, W, H, m);
+    const c = camera(beat, W, H, m, explore);
     if (k3.current) k3.current.fit(c.box, c.pad, reduced() ? 0 : beat === beatRef.current ? 1.9 : 0, c.az, c.el, c.pts);
     if (!mapOk || !mv.current) return;
     mv.current.fit(c.box, c.pad, reduced() ? 0 : beat === beatRef.current ? 1800 : 0);
     mv.current.map.resize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [beat, mapOk, m, W, H]);
+  }, [beat, mapOk, m, W, H, explore]);
 
   useEffect(() => {
     if (mapOk && mv.current) mv.current.state(beat, explore ? sel : null);
@@ -201,7 +203,7 @@ export default function App() {
     gsap.set(Object.values(cards.current).filter((e) => e && !e.classList.contains('herosub') && e.tagName !== 'P'), { xPercent: -50, yPercent: -50 });
     gsap.set(cards.current.heroSub, { opacity: 0, y: 14 });
   }, []);
-  const lay = useMemo(() => layout(beat, W, H, m), [beat, W, H, m]);
+  const lay = useMemo(() => layout(beat, W, H, m, explore && beat === 8), [beat, W, H, m, explore]);
   useLayoutEffect(() => {
     const first = !inited.current;
     inited.current = true;
@@ -226,7 +228,7 @@ export default function App() {
   const related = (c: Conn) => !explore || !sel || sel === 'eco' || sel === 'lim' || sel === 'bio' || c.models.includes(sel);
   const geoColor = useMemo(() => {
     const g: Record<string, string> = {};
-    const src = beat === 8 && !(explore && sel) ? CONNS.filter((c) => c.min === 8 && c.max === 8 && (c.a.startsWith('o:') || c.b.startsWith('g:'))) : conns.filter(related);
+    const src = beat === 8 && !explore ? [] : beat === 8 && !sel ? CONNS.filter((c) => c.min === 8 && c.max === 8 && (c.a.startsWith('o:') || c.b.startsWith('g:'))) : conns.filter(related);
     for (const c of src) for (const a of [c.a, c.b]) if (a.startsWith('g:')) g[a.slice(2)] = g[a.slice(2)] || c.color;
     return g;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -312,7 +314,14 @@ export default function App() {
       }
       document.querySelectorAll('.lane.on .chip, #legend, #panel, .herosub').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 4)));
       svg.querySelectorAll('.cyc.on text').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 3)));
-      svg.querySelectorAll('g.gp.on .gd, g.gl2.on circle').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 3)));
+      // una insignia del territorio que quede debajo de un nodo o rótulo se oculta: nunca se encima nada
+      svg.querySelectorAll<SVGGElement>('g.gp').forEach((g) => {
+        if (!g.classList.contains('on')) { g.style.visibility = ''; return; }
+        const bx = toBox(g.querySelector('.gd')!.getBoundingClientRect(), 4);
+        if (occ.some((o) => hit(bx, o))) g.style.visibility = 'hidden';
+        else { g.style.visibility = ''; occ.push(bx); }
+      });
+      svg.querySelectorAll('g.gl2.on circle').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 3)));
       const place = (px: number, py: number, w: number, h: number, cands: [number, number, boolean?][], mid: boolean) => {
         for (const [dx, dy, md] of cands) {
           const m0 = md ?? mid;
@@ -326,6 +335,7 @@ export default function App() {
         return null;
       };
       svg.querySelectorAll<SVGGElement>('g.gp.on').forEach((g) => {
+        if (g.style.visibility === 'hidden') return;
         const t = g.querySelector<SVGTextElement>('.gl')!;
         const P = g.getAttribute('transform')?.match(/translate\(([-\d.]+)[ ,]([-\d.]+)\)/);
         if (!P) return;
@@ -450,7 +460,7 @@ export default function App() {
     if (SPINE[act] === id) go(beat + 1);
   };
 
-  const orb = useMemo(() => orbit(W, H, m), [W, H, m]);
+  const orb = useMemo(() => orbit(W, H, m, explore && beat === 8), [W, H, m, explore, beat]);
   const selModel = sel ? MODEL[sel] : null;
   const dashedLegend = beat >= 3;
 
