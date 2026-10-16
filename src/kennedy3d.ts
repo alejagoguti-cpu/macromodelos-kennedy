@@ -130,7 +130,7 @@ export class Kennedy3D {
       // parques
       try {
         const parks = await getJson('kennedy_parques.json');
-        g.add(this.flat(parks.map((p: any) => p.pts), 0.02, new THREE.MeshBasicMaterial({ color: 0x15281c, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false })));
+        g.add(this.flat(parks.map((p: any) => p.pts), 0.02, new THREE.MeshBasicMaterial({ color: 0x101c15, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false })));
       } catch { /* sin parques */ }
       done(0.08);
       try {
@@ -138,12 +138,12 @@ export class Kennedy3D {
         const pos: number[] = [];
         net.edges.forEach(([, pts]: [string, number[][]]) => { for (let i = 0; i < pts.length - 1; i++) { const p = rawToScene(pts[i][0], pts[i][1]), q = rawToScene(pts[i + 1][0], pts[i + 1][1]); pos.push(p.x, 0.04, p.z, q.x, 0.04, q.z); } });
         const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        g.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x59606b, transparent: true, opacity: 0.8 })));
+        g.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x4a515b, transparent: true, opacity: 0.45 })));
       } catch { /* sin vías */ }
       done(0.16);
       try {
         const water = await getJson('kennedy_water_bodies.json');
-        g.add(this.flat(water.map((w: any) => w.pts), 0.06, new THREE.MeshBasicMaterial({ color: 0x2f5878, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false })));
+        g.add(this.flat(water.map((w: any) => w.pts), 0.06, new THREE.MeshBasicMaterial({ color: 0x1f3d57, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false })));
       } catch { /* sin agua */ }
       done(0.22);
       try {
@@ -151,7 +151,7 @@ export class Kennedy3D {
         const pos: number[] = [];
         man.forEach((m: any) => { for (let i = 0; i < m.pts.length - 1; i++) { const p = rawToScene(m.pts[i][0], m.pts[i][1]), q = rawToScene(m.pts[i + 1][0], m.pts[i + 1][1]); pos.push(p.x, 0.01, p.z, q.x, 0.01, q.z); } });
         const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        g.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x3a3f47, transparent: true, opacity: 0.55 })));
+        g.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x2c3036, transparent: true, opacity: 0.35 })));
       } catch { /* sin manzanas */ }
       done(0.3);
       // árboles reales: nube de puntos (barata y no depende de la cámara)
@@ -160,12 +160,12 @@ export class Kennedy3D {
         const pos = new Float32Array(trees.length * 3);
         trees.forEach((t: any, i: number) => { const p = rawToScene(t[0], t[1]); pos[i * 3] = p.x; pos[i * 3 + 1] = Math.max(0.35, t[2] * SCALE * 0.7); pos[i * 3 + 2] = p.z; });
         const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        const pts = new THREE.Points(tg, new THREE.PointsMaterial({ color: 0x3f8a5a, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false }));
+        const pts = new THREE.Points(tg, new THREE.PointsMaterial({ color: 0x2f5e44, size: 1.5, sizeAttenuation: false, transparent: true, opacity: 0.28, depthWrite: false }));
         pts.frustumCulled = false; g.add(pts);
       } catch { /* sin árboles */ }
       done(0.42);
       // techos y fachadas del modelo
-      for (const [f, col] of [['kennedy_roofs_flat.json', 0x3b4048], ['kennedy_facades.json', 0x6b4a3d]] as const) {
+      for (const [f, col] of [['kennedy_roofs_flat.json', 0x20242a], ['kennedy_facades.json', 0x2a2623]] as const) {
         try {
           const data = await getJson(f);
           const sp = data.verts.map((v: number[]) => { const p = rawToScene(v[0], v[1]); return [p.x, v[2] * SCALE, p.z]; });
@@ -179,8 +179,8 @@ export class Kennedy3D {
       // edificios (243 mil): se construyen por lotes para no bloquear la animación
       try {
         const list = await getJson('kennedy_buildings.json');
-        const mat = mk(0x262a31);
-        const roofMat = mk(0x30353d);
+        const mat = mk(0x16191e);
+        const roofMat = mk(0x1e2228);
         // celdas espaciales: cada una es una malla propia y se descarta sola cuando queda fuera de cuadro
         const CELL = 900;
         const cells = new Map<number, any[]>();
@@ -248,9 +248,9 @@ export class Kennedy3D {
     };
     const rios = geo.agua.features.filter((f: any) => f.properties.kind === 'rio');
     const canales = geo.agua.features.filter((f: any) => f.properties.kind === 'canal');
-    this.fat(toSegs(rios, 0.9), COLORS.green, 5, 'rondas');
-    this.fat(toSegs(canales, 0.8), COLORS.water, 1.1, 'canal');
-    this.fat(toSegs(rios, 1.0), COLORS.water, 1.8, 'rio');
+    this.fat(toSegs(rios, 0.9), COLORS.green, 3, 'rondas');
+    this.fat(toSegs(canales, 0.8), COLORS.water, 0.8, 'canal');
+    this.fat(toSegs(rios, 1.0), COLORS.water, 1.4, 'rio');
     for (const k of ['burro', 'vaca', 'techo']) {
       const feats = geo.cuerpos.features.filter((f: any) => f.properties.wet === k);
       const pos: number[] = [];
@@ -289,9 +289,9 @@ export class Kennedy3D {
       if (this.fills[k]) this.fade(this.fills[k], hk ? 0.4 : 0, hk ? 0.5 + i * 0.65 : 0);
       const l = this.lines['w-' + k]; if (l) this.fade(l.m, hk ? 1 : 0, hk ? 0.5 + i * 0.65 : 0);
     });
-    if (this.lines.rio) this.fade(this.lines.rio.m, hk ? 0.9 : 0, hk ? 2.2 : 0, 1.2);
-    if (this.lines.canal) this.fade(this.lines.canal.m, hk ? 0.7 : 0, hk ? 2.6 : 0, 1.2);
-    const reg = (beat >= 3 && beat <= 7) || (beat === 8 && (all || sel === 'reg' || sel === 'eco')) ? 0.45 : 0;
+    if (this.lines.rio) this.fade(this.lines.rio.m, hk ? 0.7 : 0, hk ? 2.2 : 0, 1.2);
+    if (this.lines.canal) this.fade(this.lines.canal.m, hk ? 0.28 : 0, hk ? 2.6 : 0, 1.2);
+    const reg = (beat === 3 || beat === 4) || (beat === 8 && (all || sel === 'reg' || sel === 'eco')) ? 0.4 : 0;
     if (this.lines.rondas) this.fade(this.lines.rondas.m, reg, reg ? 0.9 : 0);
     const vias = beat === 6 || beat === 7 || (beat === 8 && (all || sel === 'lim' || sel === 'com')) ? 1 : 0;
     if (this.lines.vias) this.fade(this.lines.vias.m, vias ? 0.95 : 0, 0.3);

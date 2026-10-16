@@ -24,10 +24,10 @@ button { font-family: inherit; }
   background-image: radial-gradient(#1d1d1d 1px, transparent 1.1px); background-size: 26px 26px;
 }
 #map { position: absolute; inset: 0; pointer-events: none; }
-#k3d { position: absolute; inset: 0; pointer-events: none; }
+#k3d { position: absolute; inset: 0; pointer-events: none; -webkit-mask-image: radial-gradient(ellipse 78% 82% at 64% 52%, #000 52%, transparent 100%); mask-image: radial-gradient(ellipse 78% 82% at 64% 52%, #000 52%, transparent 100%); }
 #k3d canvas { display: block; width: 100%; height: 100%; }
 #map .maplibregl-canvas { outline: none; }
-#wash { position: absolute; left: 0; top: 0; bottom: 0; width: 44%; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, .78) 0%, rgba(0, 0, 0, .55) 62%, rgba(0, 0, 0, 0)); }
+#wash { position: absolute; left: 0; top: 0; bottom: 0; width: 44%; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, .9) 0%, rgba(0, 0, 0, .7) 58%, rgba(0, 0, 0, 0)); }
 .abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
 
 /* ---------- botones y barra */
@@ -100,10 +100,11 @@ button { font-family: inherit; }
 @keyframes rip { from { transform: translate(-50%, -50%) scale(1); opacity: .9; } to { transform: translate(-50%, -50%) scale(13); opacity: 0; border-width: .5px; } }
 
 /* ---------- campos conceptuales (los "carriles" punteados de la referencia) */
-.lane { position: absolute; left: 0; top: 0; border: 1px dashed color-mix(in srgb, var(--c) 45%, #000); border-radius: 22px; pointer-events: none; opacity: 0; transition: opacity .7s .3s; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 6%, transparent), color-mix(in srgb, var(--c) 1%, transparent)); }
+.lane { position: absolute; left: 0; top: 0; border: 1.5px dashed color-mix(in srgb, var(--c) 75%, #000); border-radius: 22px; pointer-events: none; opacity: 0; transition: opacity .7s .3s; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 13%, #050505), color-mix(in srgb, var(--c) 7%, #050505)); box-shadow: 0 0 0 1px rgba(0, 0, 0, .6); }
 .lane.on { opacity: 1; }
-.lane.hid { border-style: solid; border-width: 1px; border-radius: 18px; background: color-mix(in srgb, var(--c) 7%, transparent); }
-.lane.bio { border-radius: 28px; }
+.lane.hid { border-style: solid; border-width: 1.5px; border-radius: 18px; background: color-mix(in srgb, var(--c) 16%, #050505); }
+.lane.bio .chip { display: none; }
+.lane.bio { border-radius: 28px; background: linear-gradient(180deg, rgba(240, 240, 240, .06), rgba(240, 240, 240, .02)); }
 .lane .chip { position: absolute; left: 22px; top: -15px; display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 8px; background: #000; border: 1px solid color-mix(in srgb, var(--c) 55%, #000); border-radius: 20px; font: 500 10.5px var(--mono); letter-spacing: 1.2px; color: var(--c); text-transform: uppercase; white-space: nowrap; }
 .lane .chip svg { width: 14px; height: 14px; }
 .lane.hid .chip { font-size: 9px; padding: 3px 10px 3px 7px; left: 14px; top: -11px; }
@@ -148,8 +149,14 @@ button { font-family: inherit; }
 .cyc.on .cycarc .arrow { opacity: 1; }
 .cycarc.dsh .base { stroke-dasharray: .03 .022; stroke-dashoffset: 0; }
 .cycarc .flow { animation-duration: 1.4s; }
+.cycin { fill: none; stroke: #e6956a; stroke-opacity: .12; stroke-dasharray: 2 6; }
+.cyctile { fill: #1b0f08; stroke: #e6956a; stroke-width: 1.6; animation: cpulse 7.5s ease-in-out infinite; animation-delay: calc(var(--i) * 1.5s); }
+.cyctile.prop { stroke-dasharray: 5 4; }
+@keyframes cpulse { 0%, 22%, 100% { fill: #1b0f08; stroke-width: 1.6; filter: none; } 8%, 14% { fill: #4a2812; stroke-width: 3; filter: drop-shadow(0 0 10px rgba(230, 149, 106, .55)); } }
+.cycnode { opacity: 0; transition: opacity .5s var(--dl, 0s); }
+.cyc.on .cycnode { opacity: 1; }
+.cycnum { font: 500 9px var(--mono); letter-spacing: .8px; fill: #e6956a; opacity: .8; }
 .cring { fill: none; stroke: var(--c, #e6956a); stroke-width: 1.2; opacity: .5; }
-.cycnode circle:first-child { stroke: #e6956a; }
 .cyclb { font: 500 11px var(--mono); letter-spacing: .9px; text-transform: uppercase; fill: #f0f0f0; paint-order: stroke; stroke: #000; stroke-width: 4px; stroke-linejoin: round; }
 .cyctitle { font: 700 12px var(--sans); letter-spacing: .24em; fill: #e6956a; }
 .cycsub { font: 400 9.5px var(--mono); letter-spacing: 1px; text-transform: uppercase; fill: var(--mut); }

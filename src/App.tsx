@@ -1,9 +1,9 @@
-import type { ReactElement } from 'react';
+import { cloneElement, type ReactElement } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
-import { ArrowLeft, ArrowRight, Bird, Droplets, Gauge, Leaf, MousePointerClick, Network, Recycle, Sprout, Store } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bird, Droplets, Gauge, Leaf, MousePointerClick, Network, PackagePlus, Recycle, ShoppingBasket, Sprout, Store, Trash2, Wheat } from 'lucide-react';
 import { ACTIVE_BY_BEAT, BOUNDS, COLORS, CYCLE, CYCLE_PROPOSED, GEO, MODEL, MODELS, N, SPINE, STEP_LABELS, type GeoId, type ModelId } from './content';
 import { CONNS, REL_TEXT, type Conn } from './conns';
 import { MapView, type Pad } from './mapview';
@@ -29,7 +29,7 @@ function layout(b: number, W: number, H: number, m: boolean): Record<string, St>
   const act = ACTIVE_BY_BEAT[b];
   const target = H * (m ? 0.3 : 0.44);
   const cam = b >= 8 ? 0 : Math.min(0, target - (y0 + Math.max(act, 0) * gap));
-  const netY: Record<ModelId, number> = { bio: 0.15, eco: 0.265, hid: 0.375, reg: 0.5, com: 0.615, cir: 0.73, lim: 0.86 };
+  const netY: Record<ModelId, number> = { bio: 0.165, eco: 0.335, hid: 0.455, reg: 0.565, com: 0.655, cir: 0.745, lim: 0.85 };
   const netX = m ? W * 0.3 : W * 0.17;
   SPINE.forEach((id, i) => {
     const mod = MODEL[id];
@@ -37,10 +37,12 @@ function layout(b: number, W: number, H: number, m: boolean): Record<string, St>
     if (b >= 8) {
       L[id] = { x: netX, y: H * netY[id], o: 1, s: 1, w: nw, compact: true, d: 0.1 + i * 0.08 };
     } else {
-      const y = y0 + i * gap + cam;
-      const o = !vis ? 0 : i === act ? 1 : Math.max(0.3, 0.62 - (act - i) * 0.08);
-      const fade = y < 50 ? 0 : o;
-      L[id] = { x: sx, y: vis ? y : y + 24, o: id === 'eco' && b === 0 ? 0 : fade, s: vis ? 1 : 0.92, w: cw, compact: false, d: i === act ? 0.45 : 0 };
+      // la tarjeta activa va completa; las anteriores quedan como fichas compactas que suben
+      const ya = Math.max(y0 + 60, target);
+      const y = i === act ? ya : i < act ? ya - 132 - (act - i - 1) * 102 : ya + 140;
+      const o = !vis ? 0 : i === act ? 1 : Math.max(0.28, 0.7 - (act - i) * 0.14);
+      const fade = y < 128 ? 0 : o;
+      L[id] = { x: sx, y: vis ? y : y + 24, o: id === 'eco' && b === 0 ? 0 : fade, s: vis ? 1 : 0.94, w: i === act ? cw : cw * 0.82, compact: i !== act, d: i === act ? 0.45 : 0 };
     }
   });
   // título central del inicio: se desplaza hacia la parte superior y cede el paso a la tarjeta
@@ -196,7 +198,7 @@ export default function App() {
   }, [lay, explore, sel, beat]);
 
   // ---------------- conexiones declarativas: visibles según secuencia y modo explorar
-  const conns = useMemo(() => CONNS.filter((c) => beat >= c.min && beat <= c.max), [beat]);
+  const conns = useMemo(() => CONNS.filter((c) => beat >= c.min && beat <= c.max && (!c.exp || (explore && sel && c.models.includes(sel)))), [beat, explore, sel]);
   const related = (c: Conn) => !explore || !sel || sel === 'eco' || sel === 'lim' || sel === 'bio' || c.models.includes(sel);
   const geoColor = useMemo(() => {
     const g: Record<string, string> = {};
@@ -207,7 +209,7 @@ export default function App() {
 
   // ciclo de circularidad (centro y radio)
   const cyc = useMemo(() => {
-    const cx = m ? W * 0.5 : W * 0.76;
+    const cx = m ? W * 0.5 : Math.min(W * 0.74, W - 250 - Math.min(W * 0.115, H * 0.25));
     const cy = m ? H * 0.7 : H * 0.5;
     const R = m ? Math.min(W * 0.22, 120) : Math.min(W * 0.115, H * 0.25);
     const pts = CYCLE.map((c, i) => {
@@ -248,16 +250,17 @@ export default function App() {
       }
       return statics.current[a] || null;
     };
-    const union = (ids: string[], pad: number) => {
+    type Pd = { t: number; r: number; b: number; l: number };
+    const union = (ids: string[], pad: Pd) => {
       let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
       for (const id of ids) {
         const r = rect(cards.current[id]);
         if (!r) continue;
         x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.right); y1 = Math.max(y1, r.bottom);
       }
-      return { x: x0 - pad, y: y0 - pad, w: x1 - x0 + pad * 2, h: y1 - y0 + pad * 2 };
+      return { x: x0 - pad.l, y: y0 - pad.t, w: x1 - x0 + pad.l + pad.r, h: y1 - y0 + pad.t + pad.b };
     };
-    const setLane = (key: string, ids: string[], pad: number) => {
+    const setLane = (key: string, ids: string[], pad: Pd) => {
       const el = lanes.current[key];
       if (!el) return;
       const u = union(ids, pad);
@@ -265,11 +268,61 @@ export default function App() {
       el.style.width = u.w + 'px';
       el.style.height = u.h + 'px';
     };
+    // ---- ningún texto se superpone con otro: las etiquetas del territorio y de las conexiones buscan un hueco libre
+    interface Box { x: number; y: number; w: number; h: number }
+    const hit = (a: Box, b: Box) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    const toBox = (r: DOMRect, pad = 3): Box => ({ x: r.left - pad, y: r.top - pad, w: r.width + pad * 2, h: r.height + pad * 2 });
+    const declutter = (svg: SVGSVGElement, mids: Record<string, { x: number; y: number }>) => {
+      const Wd = window.innerWidth, Hd = window.innerHeight;
+      const occ: Box[] = [{ x: 0, y: 0, w: Wd, h: 66 }, { x: 0, y: Hd - 64, w: Wd, h: 64 }];
+      for (const id of Object.keys(cards.current)) {
+        const el = cards.current[id];
+        if (!el || id === 'heroSub') continue;
+        if (parseFloat(el.style.opacity || '0') > 0.12) occ.push(toBox(el.getBoundingClientRect(), 4));
+      }
+      document.querySelectorAll('.lane.on .chip, #legend, #panel, .herosub').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 4)));
+      svg.querySelectorAll('.cyc.on text').forEach((el) => occ.push(toBox(el.getBoundingClientRect(), 3)));
+      const place = (px: number, py: number, w: number, h: number, cands: [number, number][], mid: boolean) => {
+        for (const [dx, dy] of cands) {
+          const x = px + dx - (mid ? w / 2 : dx < 0 ? w : 0);
+          const bx: Box = { x, y: py + dy - h + 3, w, h };
+          if (bx.x < 6 || bx.x + bx.w > Wd - 6 || bx.y < 70 || bx.y + bx.h > Hd - 70) continue;
+          if (occ.some((o) => hit(bx, o))) continue;
+          occ.push(bx);
+          return { x: px + dx, y: py + dy };
+        }
+        return null;
+      };
+      svg.querySelectorAll<SVGGElement>('g.gp.on').forEach((g) => {
+        const t = g.querySelector<SVGTextElement>('.gl')!;
+        const P = g.getAttribute('transform')?.match(/translate\(([-\d.]+)[ ,]([-\d.]+)\)/);
+        if (!P) return;
+        const px = parseFloat(P[1]), py = parseFloat(P[2]);
+        if (!t.dataset.w) t.dataset.w = String(t.getComputedTextLength() + 8);
+        const w = parseFloat(t.dataset.w);
+        const pos = place(px, py, w, 13, [[10, -6], [10, 16], [-10, -6], [-10, 16], [0, -18], [0, 28], [26, -22], [-26, 32]], false);
+        if (pos) {
+          t.setAttribute('text-anchor', pos.x < px - 1 ? 'end' : 'start');
+          t.setAttribute('x', String(pos.x - px));
+          t.setAttribute('y', String(pos.y - py));
+          t.style.opacity = '1';
+        } else t.style.opacity = '0';
+      });
+      svg.querySelectorAll<SVGTextElement>('text.el.on').forEach((t) => {
+        const m = mids[t.dataset.el!];
+        if (!m) return;
+        if (!t.dataset.w) t.dataset.w = String(t.getComputedTextLength() + 8);
+        const pos = place(m.x, m.y, parseFloat(t.dataset.w), 13, [[0, -8], [0, 16], [0, -24], [0, 32], [0, -40], [0, 48]], true);
+        if (pos) { t.setAttribute('x', String(pos.x)); t.setAttribute('y', String(pos.y)); t.style.opacity = ''; } else t.style.opacity = '0';
+      });
+    };
     const tick = () => {
       const b = beatRef.current;
-      setLane('eco', b >= 8 ? ['eco', 'hid', 'reg', 'com', 'cir'] : ['eco', 'hid'], 20);
-      setLane('hid', ['hid'], 11);
-      setLane('bio', SPINE, 34);
+      // el margen superior deja sitio a la etiqueta del campo para que nunca pise el texto de las tarjetas
+      setLane('eco', b >= 8 ? ['eco', 'hid', 'reg', 'com', 'cir'] : ['eco', 'hid'], { t: 38, r: 22, b: 20, l: 22 });
+      setLane('hid', ['hid'], { t: 30, r: 11, b: 11, l: 11 });
+      setLane('bio', SPINE, { t: 16, r: 28, b: 16, l: 28 });
+      const mids: Record<string, { x: number; y: number }> = {};
       const svg = svgRef.current;
       if (!svg) return;
       svg.querySelectorAll<SVGGElement>('g[data-cn]').forEach((g) => {
@@ -294,14 +347,14 @@ export default function App() {
           const t = 0.5, u = 1 - t;
           const mx = u * u * u * A.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * B.x;
           const my = u * u * u * A.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * B.y;
-          lb.setAttribute('x', String(mx));
-          lb.setAttribute('y', String(my - 7));
+          mids[g.dataset.cn!] = { x: mx, y: my };
         }
       });
       svg.querySelectorAll<SVGGElement>('g[data-g]').forEach((g) => {
         const P = anchor('g:' + g.dataset.g, null);
         if (P) g.setAttribute('transform', 'translate(' + P.x + ' ' + P.y + ')');
       });
+      declutter(svg, mids);
     };
     gsap.ticker.add(tick);
     return () => gsap.ticker.remove(tick);
@@ -355,10 +408,10 @@ export default function App() {
         <div ref={(e) => { lanes.current.bio = e; }} className={'lane bio' + (beat >= 8 ? ' on' : '')} style={{ ['--c' as string]: COLORS.bio }}>
           <span className="chip"><Bird />Biocéntrico · criterio transversal</span>
         </div>
-        <div ref={(e) => { lanes.current.eco = e; }} className={'lane eco' + (beat >= 1 ? ' on' : '')} style={{ ['--c' as string]: COLORS.cream }}>
+        <div ref={(e) => { lanes.current.eco = e; }} className={'lane eco' + ((beat >= 1 && beat <= 2) || beat >= 8 ? ' on' : '')} style={{ ['--c' as string]: COLORS.cream }}>
           <span className="chip"><Leaf />{beat >= 8 ? 'Ecocéntrico · marco general' : 'Campo ecocéntrico'}</span>
         </div>
-        <div ref={(e) => { lanes.current.hid = e; }} className={'lane hid' + (beat >= 1 ? ' on' : '')} style={{ ['--c' as string]: COLORS.water }}>
+        <div ref={(e) => { lanes.current.hid = e; }} className={'lane hid' + ((beat >= 1 && beat <= 2) || beat >= 8 ? ' on' : '')} style={{ ['--c' as string]: COLORS.water }}>
           <span className="chip"><Droplets />Contenido en el Ecocéntrico</span>
         </div>
 
@@ -495,9 +548,16 @@ function isRelated(sel: ModelId, id: ModelId) {
 }
 
 // ------------------------------------------------------------ ciclo de circularidad
+const CYC_ICON: Record<string, ReactElement> = {
+  consumo: <ShoppingBasket />, residuos: <Trash2 />, aprov: <Recycle />, insumos: <PackagePlus />, prod: <Wheat />,
+};
+const CYC_LINES: Record<string, string[]> = {
+  consumo: ['Consumo'], residuos: ['Residuos', 'orgánicos'], aprov: ['Aprovechamiento'], insumos: ['Nuevos', 'insumos'], prod: ['Producción'],
+};
 function CycleSvg({ cyc }: { cyc: { cx: number; cy: number; R: number; pts: { id: string; label: string; a: number; x: number; y: number }[] } }) {
   const { cx, cy, R, pts } = cyc;
-  const gapA = 0.2;
+  const T = 30; // mitad de la ficha
+  const gapA = (T + 12) / R;
   const arcs = pts.map((p, i) => {
     const q = pts[(i + 1) % pts.length];
     const a0 = p.a + gapA;
@@ -505,12 +565,12 @@ function CycleSvg({ cyc }: { cyc: { cx: number; cy: number; R: number; pts: { id
     if (a1 < a0) a1 += Math.PI * 2;
     const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
     const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
-    const ang = (a1 + Math.PI / 2) * (180 / Math.PI);
-    return { d: 'M' + x0 + ' ' + y0 + 'A' + R + ' ' + R + ' 0 0 1 ' + x1 + ' ' + y1, x1, y1, ang, prop: CYCLE_PROPOSED[i], i };
+    return { d: 'M' + x0 + ' ' + y0 + 'A' + R + ' ' + R + ' 0 0 1 ' + x1 + ' ' + y1, x1, y1, ang: (a1 + Math.PI / 2) * (180 / Math.PI), prop: CYCLE_PROPOSED[i], i };
   });
   return (
     <>
-      <circle cx={cx} cy={cy} r={R + 34} className="cycbg" />
+      <circle cx={cx} cy={cy} r={R + T + 26} className="cycbg" />
+      <circle cx={cx} cy={cy} r={R - T - 18} className="cycin" />
       {arcs.map((a) => (
         <g key={a.i} className={'cycarc' + (a.prop ? ' dsh' : '')} style={{ ['--c' as string]: COLORS.orange, ['--dl' as string]: 0.5 + a.i * 0.45 + 's' }}>
           <path d={a.d} className="base" pathLength={1} />
@@ -519,21 +579,29 @@ function CycleSvg({ cyc }: { cyc: { cx: number; cy: number; R: number; pts: { id
         </g>
       ))}
       {pts.map((p, i) => {
-        const right = Math.cos(p.a) > 0.2, left = Math.cos(p.a) < -0.2;
-        const anchor = right ? 'start' : left ? 'end' : 'middle';
-        const dx = right ? 16 : left ? -16 : 0;
-        const dy = Math.sin(p.a) < -0.9 ? -18 : Math.sin(p.a) > 0.9 ? 28 : 4;
+        const prop = CYCLE_PROPOSED[i === 0 ? 4 : i - 1];
+        const cos = Math.cos(p.a), sin = Math.sin(p.a);
+        const right = cos > 0.25, left = cos < -0.25;
+        const lines = CYC_LINES[p.id];
+        const lx = p.x + (right ? T + 12 : left ? -T - 12 : 0);
+        const ly = right || left ? p.y - (lines.length - 1) * 7 : sin < 0 ? p.y - T - 12 - (lines.length - 1) * 14 : p.y + T + 20;
         return (
-          <g key={p.id} className="cycnode" style={{ ['--dl' as string]: 0.3 + i * 0.45 + 's' }}>
-            <circle cx={p.x} cy={p.y} r="10" className="cring" />
-            <circle cx={p.x} cy={p.y} r="5.5" fill={COLORS.orange} />
-            <text x={p.x + dx} y={p.y + dy} textAnchor={anchor} className="cyclb">{p.label}</text>
+          <g key={p.id} className="cycnode" style={{ ['--dl' as string]: 0.3 + i * 0.45 + 's', ['--i' as string]: i }}>
+            <title>{prop ? 'Flujo propuesto' : 'Flujo existente'}: {p.label}</title>
+            <rect x={p.x - T} y={p.y - T} width={T * 2} height={T * 2} rx="16" className={'cyctile' + (prop ? ' prop' : '')} />
+            <g style={{ color: COLORS.orange }}>
+              {cloneElement(CYC_ICON[p.id], { x: p.x - 15, y: p.y - 15, size: 30, strokeWidth: 1.8 } as object)}
+            </g>
+            <text x={p.x - T + 6} y={p.y - T + 14} className="cycnum">{String(i + 1).padStart(2, '0')}</text>
+            <text x={lx} y={ly} textAnchor={right ? 'start' : left ? 'end' : 'middle'} className="cyclb">
+              {lines.map((l, k) => (<tspan key={k} x={lx} dy={k === 0 ? 0 : 14}>{l}</tspan>))}
+            </text>
           </g>
         );
       })}
-      <text x={cx} y={cy - 4} textAnchor="middle" className="cyctitle">CIRCULARIDAD</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" className="cycsub">flujos existentes y propuestos</text>
-      <text x={cx} y={cy + 30} textAnchor="middle" className="cycsub">sin cantidades estimadas</text>
+      <text x={cx} y={cy - 8} textAnchor="middle" className="cyctitle">CIRCULARIDAD</text>
+      <text x={cx} y={cy + 10} textAnchor="middle" className="cycsub">ciclo de residuos orgánicos</text>
+      <text x={cx} y={cy + 26} textAnchor="middle" className="cycsub">sin cantidades estimadas</text>
     </>
   );
 }

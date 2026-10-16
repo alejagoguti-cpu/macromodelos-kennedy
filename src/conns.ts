@@ -18,6 +18,7 @@ export interface Conn {
   title?: string;
   bulge?: boolean;
   kind?: 'tension' | 'dep';
+  exp?: boolean; // solo en el modo explorar
 }
 
 const C = COLORS;
@@ -34,38 +35,37 @@ add({ id: 's-com-cir', a: 'c:com:b', b: 'c:cir:t', color: C.earth, arrow: true, 
 add({ id: 's-cir-lim', a: 'c:cir:b', b: 'c:lim:t', color: C.orange, arrow: true, min: 6, max: 7, delay: 0.7, models: ['cir', 'lim'] });
 
 // ---- Hidrocéntrico: humedales y red hídrica reales
-(['burro', 'vaca', 'techo'] as GeoId[]).forEach((g, i) => add({ id: 'h-' + g, a: 'c:hid:r', b: 'g:' + g, color: C.water, min: 2, max: 8, delay: 0.6 + i * 0.65, models: ['hid'] }));
+(['burro', 'vaca', 'techo'] as GeoId[]).forEach((g, i) => add({ id: 'h-' + g, a: 'c:hid:r', b: 'g:' + g, color: C.water, min: 2, max: 2, delay: 0.6 + i * 0.65, models: ['hid'] }));
 
 // ---- Regenerativo: corredores existentes (rondas) y propuestos (conexión conceptual)
-add({ id: 'r-ronda', a: 'c:reg:r', b: 'g:fucha', color: C.green, min: 3, max: 8, delay: 0.5, models: ['reg'], title: 'Ronda hídrica del Río Fucha: corredor existente (NOD-EEP04)' });
-add({ id: 'r-hub', a: 'c:reg:r', b: 'g:hub', color: C.green, dashed: true, min: 3, max: 8, delay: 1.1, models: ['reg'], title: 'Corredor propuesto El Burro – La Vaca – Techo (NOD-EEP09): hipótesis, no existe como corredor' });
-(['burro', 'vaca', 'techo'] as GeoId[]).forEach((g, i) => add({ id: 'r-' + g, a: 'g:hub', b: 'g:' + g, color: C.green, dashed: true, arrow: true, min: 3, max: 8, delay: 1.6 + i * 0.5, models: ['reg'], title: arista('EDG-5' + (i + 1)).razon }));
+add({ id: 'r-ronda', a: 'c:reg:r', b: 'g:fucha', color: C.green, min: 3, max: 3, delay: 0.5, models: ['reg'], title: 'Ronda hídrica del Río Fucha: corredor existente (NOD-EEP04)' });
+add({ id: 'r-hub', a: 'c:reg:r', b: 'g:hub', color: C.green, dashed: true, min: 3, max: 3, delay: 1.1, models: ['reg'], title: 'Corredor propuesto El Burro – La Vaca – Techo (NOD-EEP09): hipótesis, no existe como corredor' });
+(['burro', 'vaca', 'techo'] as GeoId[]).forEach((g, i) => add({ id: 'r-' + g, a: 'g:hub', b: 'g:' + g, color: C.green, dashed: true, arrow: true, min: 3, max: 3, delay: 1.6 + i * 0.5, models: ['reg'], title: arista('EDG-5' + (i + 1)).razon }));
 
 // ---- Comercio ecológico y autonomía territorial
-add({ id: 'c-cora', a: 'c:com:r', b: 'g:corabastos', color: C.earth, min: 4, max: 8, delay: 0.5, models: ['com'] });
-add({ id: 'c-patio', a: 'c:com:r', b: 'g:patio', color: C.earth, min: 4, max: 8, delay: 0.9, models: ['com'] });
-add({ id: 'c-art', a: 'g:patio', b: 'g:corabastos', color: C.earth, dashed: true, min: 4, max: 8, delay: 1.4, models: ['com'], label: 'articulación propuesta' });
+add({ id: 'c-cora', a: 'c:com:r', b: 'g:corabastos', color: C.earth, min: 4, max: 4, delay: 0.5, models: ['com'] });
+add({ id: 'c-patio', a: 'c:com:r', b: 'g:patio', color: C.earth, min: 4, max: 4, delay: 0.9, models: ['com'] });
+add({ id: 'c-art', a: 'g:patio', b: 'g:corabastos', color: C.earth, dashed: true, min: 4, max: 4, delay: 1.4, models: ['com'], title: 'Articulación propuesta entre Corabastos y la economía popular de Patio Bonito (estrategia, no condición comprobada)' });
 
 // ---- Circularidad: se conecta al ciclo y el ciclo a Corabastos
-add({ id: 'ci-ring', a: 'c:cir:r', b: 'x:ringL', color: C.orange, min: 5, max: 5, delay: 0.5, models: ['cir'] });
 add({ id: 'ci-cora', a: 'x:residuos', b: 'g:corabastos', color: C.orange, min: 5, max: 5, delay: 1.2, models: ['cir'], title: 'Generación de residuos orgánicos en Corabastos (NOD-ECO01)' });
 add({ id: 'ci-net', a: 'c:cir:r', b: 'g:corabastos', color: C.orange, min: 8, max: 8, delay: 0.5, models: ['cir'] });
 
 // ---- Límites ecológicos: tensiones y dependencias del Excel del proyecto
-add({ id: 'l-cali', a: 'c:lim:r', b: 'g:cali', color: C.grey, min: 6, max: 8, delay: 0.4, models: ['lim'] });
-add({ id: 'l-13', a: 'c:lim:r', b: 'g:calle13', color: C.grey, min: 6, max: 8, delay: 0.6, models: ['lim'] });
+add({ id: 'l-cali', a: 'c:lim:r', b: 'g:cali', color: C.grey, min: 6, max: 6, delay: 0.4, models: ['lim'] });
+add({ id: 'l-13', a: 'c:lim:r', b: 'g:calle13', color: C.grey, min: 6, max: 6, delay: 0.6, models: ['lim'] });
 LIMIT_EDGES.forEach((e, i) => {
   const dep = isDependency(e.id);
   add({
-    id: 'e-' + e.id, a: 'g:' + e.a, b: 'g:' + e.b, color: dep ? C.grey : '#ffffff', dashed: dep, min: 6, max: 8, delay: 0.9 + i * 0.28, models: ['lim'],
+    id: 'e-' + e.id, a: 'g:' + e.a, b: 'g:' + e.b, color: dep ? C.grey : '#ffffff', dashed: dep, min: 6, max: 6, delay: 0.9 + i * 0.28, models: ['lim'],
     kind: dep ? 'dep' : 'tension', label: e.id, title: arista(e.id).tipo + ' (' + arista(e.id).tension + '): ' + arista(e.id).razon,
   });
 });
 
 // ---- Biocéntrico: criterio transversal sobre todo lo anterior
 (['eco', 'hid', 'reg', 'com', 'cir', 'lim'] as ModelId[]).forEach((m, i) => add({ id: 'b-' + m, a: 'c:bio:l', b: 'c:' + m + ':l', color: C.bio, bulge: true, min: 7, max: 7, delay: 0.5 + i * 0.18, models: ['bio', m] }));
-add({ id: 'b-tingua', a: 'c:bio:r', b: 'g:tingua', color: C.bio, min: 7, max: 8, delay: 1.3, models: ['bio'] });
-add({ id: 'b-vuelo', a: 'c:bio:r', b: 'g:vuelo', color: C.bio, min: 7, max: 8, delay: 1.5, models: ['bio'] });
+add({ id: 'b-tingua', a: 'c:bio:r', b: 'g:tingua', color: C.bio, min: 7, max: 7, delay: 1.3, models: ['bio'] });
+add({ id: 'b-vuelo', a: 'c:bio:r', b: 'g:vuelo', color: C.bio, min: 7, max: 7, delay: 1.5, models: ['bio'] });
 
 // ---- red propia (secuencia 8)
 add({ id: 'n-hid-reg', a: 'c:hid:b', b: 'c:reg:t', color: C.water, arrow: true, min: 8, max: 8, delay: 1.0, models: ['hid', 'reg'] });
@@ -73,6 +73,12 @@ add({ id: 'n-reg-com', a: 'c:reg:b', b: 'c:com:t', color: C.green, arrow: true, 
 add({ id: 'n-com-cir', a: 'c:com:b', b: 'c:cir:t', color: C.earth, arrow: true, min: 8, max: 8, delay: 1.4, models: ['com', 'cir'] });
 add({ id: 'n-lim', a: 'c:lim:t', b: 'f:eco:b', color: C.grey, min: 8, max: 8, delay: 1.6, models: ['lim', 'eco', 'hid', 'reg', 'com', 'cir'], label: 'condiciona' });
 add({ id: 'n-bio', a: 'c:bio:b', b: 'f:eco:t', color: C.bio, min: 8, max: 8, delay: 1.8, models: ['bio', 'eco', 'hid', 'reg', 'com', 'cir', 'lim'], label: 'criterio de evaluación' });
+
+// red propia: las mismas relaciones espaciales; las que unen dos puntos del territorio solo al explorar
+for (const o of CONNS.slice()) {
+  if (o.max === 8 || !(o.a.startsWith('g:') || o.b.startsWith('g:')) || o.a.startsWith('x:')) continue;
+  add({ ...o, id: o.id + '-n', min: 8, max: 8, exp: o.a.startsWith('g:') });
+}
 
 // relaciones narradas por macromodelo (modo explorar)
 export const REL_TEXT: Record<ModelId, { rel: [ModelId, string][]; geo: GeoId[] }> = {
