@@ -12,19 +12,22 @@ export const ARISTAS = proyecto.aristas as Record<string, Arista>;
 export const P = (code: string): LngLat => [NODOS[code].lon, NODOS[code].lat];
 export const NOMBRE = (code: string) => NODOS[code].nombre;
 
-// paleta de la referencia (problemaskennedy) más el azul hídrico y el naranja de circularidad
+// paleta de la referencia (problemaskennedy) más el azul hídrico, naranja de circularidad y dimensiones sociales/heterárquicas
 export const COLORS = {
   cream: '#ebe5d9',
   water: '#6ea8d6',
   green: '#7fbf8e',
   earth: '#cdae67',
   orange: '#e6956a',
+  care: '#d977a8',
+  org: '#f59e0b',
+  gov: '#38bdf8',
   grey: '#b4b4b4',
   bio: '#f0f0f0',
   ink: '#0a0a0a',
 };
 
-export type ModelId = 'eco' | 'hid' | 'reg' | 'com' | 'cir' | 'lim' | 'bio';
+export type ModelId = 'eco' | 'hid' | 'reg' | 'com' | 'cir' | 'soc' | 'org' | 'het' | 'lim' | 'bio';
 
 export interface Model {
   id: ModelId;
@@ -49,19 +52,38 @@ export const MODELS: Model[] = [
     text: 'Fortalecimiento de la producción local y reducción de la dependencia de insumos externos.' },
   { id: 'cir', n: '05', title: 'Circularidad', short: 'Circularidad', color: COLORS.orange, ink: '#1f0d04', appear: 5, role: 'Transformación ecológica y económica',
     text: 'Los residuos orgánicos se reincorporan como insumos para nuevos ciclos productivos.' },
-  { id: 'lim', n: '06', title: 'Límites ecológicos', short: 'Límites ecológicos', color: COLORS.grey, ink: '#0a0a0a', appear: 6, role: 'Criterio transversal',
-    text: 'Las actividades económicas y los sistemas de movilidad deben ajustarse a la capacidad ecológica del territorio.' },
-  { id: 'bio', n: '07', title: 'Biocéntrico', short: 'Biocéntrico', color: COLORS.bio, ink: '#0a0a0a', appear: 7, role: 'Criterio transversal de evaluación',
-    text: 'La continuidad de las distintas formas de vida como criterio para orientar las transformaciones territoriales.' },
+  { id: 'soc', n: '06', title: 'Sociocéntrico y redes de cuidado', short: 'Redes de cuidado', color: COLORS.care, ink: '#1a0510', appear: 6, role: 'Transformación social y reproductiva',
+    text: 'El sostenimiento colectivo de la vida: articulación de las Manzanas del Cuidado y la economía popular como base del metabolismo urbano.' },
+  { id: 'org', n: '07', title: 'Organización comunitaria y autogestión', short: 'Organización comunitaria', color: COLORS.org, ink: '#1c1502', appear: 7, role: 'Organización política territorial',
+    text: 'Autogestión comunitaria, Juntas de Acción Comunal y colectivos ambientales como núcleos vivos de defensa territorial.' },
+  { id: 'het', n: '08', title: 'Gobernanza heterárquica', short: 'Gobernanza heterárquica', color: COLORS.gov, ink: '#02151c', appear: 8, role: 'Gobernanza policéntrica y distribuida',
+    text: 'Toma de decisiones en red horizontal y multinivel sin jerarquía piramidal: comunidades, academia y Estado coordinan en interdependencia.' },
+  { id: 'lim', n: '09', title: 'Límites ecológicos', short: 'Límites ecológicos', color: COLORS.grey, ink: '#0a0a0a', appear: 9, role: 'Criterio transversal',
+    text: 'Las actividades económicas, los sistemas de movilidad y las cargas urbanas deben ajustarse a la capacidad ecológica del territorio.' },
+  { id: 'bio', n: '10', title: 'Biocéntrico', short: 'Biocéntrico', color: COLORS.bio, ink: '#0a0a0a', appear: 10, role: 'Criterio transversal de evaluación',
+    text: 'La continuidad de las distintas formas de vida como criterio para orientar y evaluar las transformaciones territoriales.' },
 ];
 export const MODEL = Object.fromEntries(MODELS.map((m) => [m.id, m])) as Record<ModelId, Model>;
 
-export const STEP_LABELS = ['Ecocéntrico', 'Hidrocéntrico', 'Red hídrica', 'Regenerativo', 'Comercio ecológico', 'Circularidad', 'Límites ecológicos', 'Biocéntrico', 'Red propia'];
+export const STEP_LABELS = [
+  'Ecocéntrico',
+  'Hidrocéntrico',
+  'Red hídrica',
+  'Regenerativo',
+  'Comercio ecológico',
+  'Circularidad',
+  'Redes de cuidado',
+  'Organización comunitaria',
+  'Gobernanza heterárquica',
+  'Límites ecológicos',
+  'Biocéntrico',
+  'Red propia',
+];
 export const N = STEP_LABELS.length;
 
 // índice de cada macromodelo en la columna (la cámara vertical sigue al activo)
-export const SPINE: ModelId[] = ['eco', 'hid', 'reg', 'com', 'cir', 'lim', 'bio'];
-export const ACTIVE_BY_BEAT = [0, 1, 1, 2, 3, 4, 5, 6, -1];
+export const SPINE: ModelId[] = ['eco', 'hid', 'reg', 'com', 'cir', 'soc', 'org', 'het', 'lim', 'bio'];
+export const ACTIVE_BY_BEAT = [0, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1];
 
 // puntos del territorio (todos con coordenadas del Excel del proyecto)
 export const GEO = {
@@ -80,10 +102,17 @@ export const GEO = {
   tingua: { ll: P('BIO01'), label: 'Tingua bogotana' },
   vuelo: { ll: P('BIO06'), label: 'Corredores de avifauna' },
   magdalena: { ll: P('EEP08'), label: 'Canal Magdalena' },
+  cui: { ll: P('CUI01'), label: 'Manzanas del Cuidado' },
+  tintal_bib: { ll: P('CUI02'), label: 'Biblioteca El Tintal' },
+  aulas: { ll: P('CUI03'), label: 'Aulas Ambientales' },
+  colectivos: { ll: P('ACT01'), label: 'Colectivos Ambientales' },
+  jac: { ll: P('ACT02'), label: 'JAC de Kennedy' },
+  alcaldia: { ll: P('ACT05'), label: 'Alcaldía Local / SDA' },
+  academia: { ll: P('ACT10'), label: 'JBB y Academia' },
 } as const;
 export type GeoId = keyof typeof GEO;
 
-// relaciones del Excel que se muestran como tensiones y dependencias (secuencia 6)
+// relaciones del Excel que se muestran como tensiones y dependencias (secuencia 9)
 export const LIMIT_EDGES: { id: string; a: GeoId; b: GeoId }[] = [
   { id: 'EDG-15', a: 'corabastos', b: 'cali' },
   { id: 'EDG-16', a: 'cali', b: 'burro' },

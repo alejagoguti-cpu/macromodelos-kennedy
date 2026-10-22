@@ -293,9 +293,9 @@ export class Kennedy3D {
   last: [number, string | null] = [0, null];
   state(beat: number, sel: string | null = null) {
     this.last = [beat, sel];
-    const all = beat >= 8 && !sel;
-    const hid = beat >= 2 && beat <= 7 ? 1 : beat === 8 ? (all || sel === 'hid' || sel === 'eco' ? 1 : 0.25) : 0;
-    const dim = beat >= 3 && beat <= 7 ? 0.7 : 1;
+    const all = beat >= 11 && !sel;
+    const hid = beat >= 2 && beat <= 10 ? 1 : beat === 11 ? (all || sel === 'hid' || sel === 'eco' ? 1 : 0.25) : 0;
+    const dim = beat >= 3 && beat <= 10 ? 0.7 : 1;
     const hk = hid * dim;
     ['burro', 'vaca', 'techo'].forEach((k, i) => {
       if (this.fills[k]) this.fade(this.fills[k], hk ? 0.4 : 0, hk ? 0.5 + i * 0.65 : 0);
@@ -303,9 +303,9 @@ export class Kennedy3D {
     });
     if (this.lines.rio) this.fade(this.lines.rio.m, hk ? 0.7 : 0, hk ? 2.2 : 0, 1.2);
     if (this.lines.canal) this.fade(this.lines.canal.m, hk ? 0.28 : 0, hk ? 2.6 : 0, 1.2);
-    const reg = (beat === 7 ? 0.3 : 0) || (beat === 3 || beat === 4) || (beat === 8 && (all || sel === 'reg' || sel === 'eco')) ? 0.4 : 0;
+    const reg = (beat === 10 ? 0.3 : 0) || (beat === 3 || beat === 4) || (beat === 11 && (all || sel === 'reg' || sel === 'eco' || sel === 'het' || sel === 'org')) ? 0.4 : 0;
     if (this.lines.rondas) this.fade(this.lines.rondas.m, reg, reg ? 0.9 : 0);
-    const vias = beat === 6 || beat === 7 || (beat === 8 && (all || sel === 'lim' || sel === 'com')) ? 1 : 0;
+    const vias = beat === 9 || beat === 10 || beat === 8 || (beat === 11 && (all || sel === 'lim' || sel === 'com' || sel === 'het')) ? 1 : 0;
     if (this.lines.vias) this.fade(this.lines.vias.m, vias ? 0.95 : 0, 0.3);
     if (this.lines.vias2) this.fade(this.lines.vias2.m, vias ? 0.6 : 0, 0.5);
   }
